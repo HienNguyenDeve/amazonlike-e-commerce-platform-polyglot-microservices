@@ -1,5 +1,10 @@
 #!/bin/bash
 
+# Load env từ root
+set -a
+source infra/docker/.env
+set +a
+
 set -e
 
 echo "Starting infrastructure..."
