@@ -1,27 +1,26 @@
 package com.nguyenhien.auth_service.unit.service;
 
+import java.util.Optional;
+import java.util.UUID;
+
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThrows;
+import org.junit.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.extension.ExtendWith;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
-
-import org.junit.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import com.nguyenhien.auth_service.api.request.CreateRefreshTokenRequest;
@@ -41,7 +40,6 @@ import com.nguyenhien.auth_service.domain.repository.IRefreshTokenRepository;
 import com.nguyenhien.auth_service.infrastructure.persistence.entity.UserEntity;
 import com.nguyenhien.auth_service.infrastructure.persistence.repository.JpaUserRepository;
 import com.nguyenhien.auth_service.infrastructure.security.UserDetailsImpl;
-import org.springframework.security.core.Authentication;
 
 @ExtendWith(MockitoExtension.class)
 public class AuthServiceTest {
@@ -161,7 +159,7 @@ public class AuthServiceTest {
                 .username("john")
                 .email("john@gmail.com")
                 .passwordHash("encoded-password")
-                .roles(Set.of(UserRole.USER))
+                .role(UserRole.USER)
                 .build();
 
         UserDetailsImpl principal = UserDetailsImpl.build(user);
@@ -175,7 +173,7 @@ public class AuthServiceTest {
                 .token("refresh-token")
                 .userId(userId)
                 .username("john")
-                .roles(Set.of("USER"))
+                .role("USER")
                 .expiration(2592000L)
                 .build();
 
@@ -212,7 +210,7 @@ public class AuthServiceTest {
                 .token("old-refresh-token")
                 .userId(userId)
                 .username("john")
-                .roles(Set.of("ROLE_USER"))
+                .role("ROLE_USER")
                 .expiration(2592000L)
                 .build();
 
@@ -220,7 +218,7 @@ public class AuthServiceTest {
                 .token("new-refresh-token")
                 .userId(userId)
                 .username("john")
-                .roles(Set.of("ROLE_USER"))
+                .role("ROLE_USER")
                 .expiration(2592000L)
                 .build();
 
