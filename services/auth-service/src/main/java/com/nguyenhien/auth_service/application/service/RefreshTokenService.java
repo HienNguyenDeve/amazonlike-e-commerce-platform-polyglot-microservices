@@ -50,13 +50,9 @@ public class RefreshTokenService implements IRefreshTokenService {
             return false;
         }
 
-        if (!refreshTokenRepository.existsById(token)) {
-            return false;
-        }
-
         // if token found
         refreshTokenRepository.deleteById(token);
-        return !refreshTokenRepository.existsById(token);
+        return true;
     }
 
     @Override
