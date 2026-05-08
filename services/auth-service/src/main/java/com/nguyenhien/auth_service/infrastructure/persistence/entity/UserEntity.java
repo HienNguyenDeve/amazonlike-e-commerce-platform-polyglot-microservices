@@ -1,7 +1,6 @@
 package com.nguyenhien.auth_service.infrastructure.persistence.entity;
 
 import java.time.LocalDateTime;
-import java.util.Set;
 import java.util.UUID;
 
 import com.nguyenhien.auth_service.domain.enums.UserRole;
@@ -52,7 +51,7 @@ public class UserEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "role", nullable = false, length = 30)
-    private Set<UserRole> roles;
+    private UserRole role;
 
     @Column(nullable = false)
     private Boolean enabled;
@@ -78,8 +77,8 @@ public class UserEntity {
         if (this.accountNonLocked == null) {
             this.accountNonLocked = true;
         }
-        if (this.roles == null) {
-            this.roles = Set.of(UserRole.USER);
+        if (this.role == null) {
+            this.role = UserRole.USER;
         }
     }
 
