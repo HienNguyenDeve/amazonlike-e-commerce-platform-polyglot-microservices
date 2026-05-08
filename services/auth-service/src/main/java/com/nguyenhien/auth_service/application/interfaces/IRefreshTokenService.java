@@ -8,7 +8,7 @@ public interface IRefreshTokenService {
     RefreshToken createRefreshToken(CreateRefreshTokenRequest request);
 
     // Delete
-    void delete(String token);
+    boolean delete(String token);
 
     // Verify
     RefreshToken verifyExpiration(RefreshToken token);

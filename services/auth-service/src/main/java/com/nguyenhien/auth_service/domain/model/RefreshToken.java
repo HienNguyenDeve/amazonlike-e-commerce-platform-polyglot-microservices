@@ -1,6 +1,5 @@
 package com.nguyenhien.auth_service.domain.model;
 
-import java.util.Set;
 import java.util.UUID;
 
 import org.springframework.data.annotation.Id;
@@ -23,7 +22,7 @@ public class RefreshToken {
 
     private String username;
 
-    private Set<String> roles;
+    private String role;
 
     @TimeToLive
     private Long expiration; // Thời gian sống tính bằng giây (VD: 2592000 cho 30 ngày)

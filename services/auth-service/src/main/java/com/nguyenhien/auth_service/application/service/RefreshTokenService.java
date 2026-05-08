@@ -36,7 +36,7 @@ public class RefreshTokenService implements IRefreshTokenService {
                 .token(newRefreshTokenStr)
                 .userId(request.getUserId())
                 .username(request.getUsername())
-                .roles(request.getRoles())
+                .role(request.getRole())
                 .expiration(refreshTokenExpiration)
                 .build();
         refreshTokenRepository.save(newRefreshToken);
@@ -44,13 +44,19 @@ public class RefreshTokenService implements IRefreshTokenService {
     }
 
     @Override
-    public void delete(String token) {
+    public boolean delete(String token) {
         // Find token
-        var refreshToken = refreshTokenRepository.findByToken(token)
-                .orElseThrow(() -> new RuntimeException("Token is invalid or not found"));
+        if (token == null || token.isBlank()) {
+            return false;
+        }
+
+        if (!refreshTokenRepository.existsById(token)) {
+            return false;
+        }
 
         // if token found
         refreshTokenRepository.deleteById(token);
+        return !refreshTokenRepository.existsById(token);
     }
 
     @Override
