@@ -2,13 +2,12 @@ package com.nguyenhien.auth_service.unit.service;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
-import java.util.Set;
 import java.util.UUID;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertSame;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import org.junit.jupiter.api.BeforeEach;
@@ -57,13 +56,13 @@ public class RefreshTokenServiceTest {
         void createRefreshToken_shouldCreate_whenNoExistToken() {
                 // Arrange
                 UUID userId = UUID.randomUUID();
-                Set<String> roles = Set.of("ROLE_USER");
+                String role = "ROLE_USER";
 
                 CreateRefreshTokenRequest request = CreateRefreshTokenRequest
                                 .builder()
                                 .userId(userId)
                                 .username("Nguyen")
-                                .roles(roles)
+                                .role(role)
                                 .build();
 
                 when(refreshTokenRepository.findAllByUserId(userId)).thenReturn(Collections.emptyList());
@@ -79,7 +78,7 @@ public class RefreshTokenServiceTest {
                 assertNotNull(result.getToken());
                 assertEquals(userId, result.getUserId());
                 assertEquals("Nguyen", result.getUsername());
-                assertEquals(roles, result.getRoles());
+                assertEquals(role, result.getRole());
                 assertEquals(TTL, result.getExpiration());
 
                 verify(refreshTokenRepository).findAllByUserId(userId);
@@ -91,19 +90,19 @@ public class RefreshTokenServiceTest {
         void createRefreshToken_shouldDeleteOldTokens_whenExistingTokens() {
                 // Arrange
                 UUID userId = UUID.randomUUID();
-                Set<String> roles = Set.of("ROLE_USER");
+                String role = "ROLE_USER";
 
                 CreateRefreshTokenRequest request = CreateRefreshTokenRequest.builder()
                                 .userId(userId)
                                 .username("john")
-                                .roles(roles)
+                                .role(role)
                                 .build();
 
                 RefreshToken old = RefreshToken.builder()
                                 .token("old-token")
                                 .userId(userId)
                                 .username("john")
-                                .roles(roles)
+                                .role(role)
                                 .expiration(TTL)
                                 .build();
 
@@ -130,41 +129,34 @@ public class RefreshTokenServiceTest {
                 // Arrange
                 String token = "valid-token";
 
-                RefreshToken entity = RefreshToken.builder()
-                                .token(token)
-                                .userId(UUID.randomUUID())
-                                .username("john")
-                                .roles(Set.of("ROLE_USER"))
-                                .expiration(TTL)
-                                .build();
-
-                when(refreshTokenRepository.findByToken(token))
-                                .thenReturn(Optional.of(entity));
-
                 // Act
                 refreshTokenService.delete(token);
 
                 // Assert
-                verify(refreshTokenRepository).findByToken(token);
                 verify(refreshTokenRepository).deleteById(token);
         }
 
         @Test
-        void delete_shouldThrow_whenTokenNotFound() {
-                // Arrange
-                String token = "invalid";
+        void delete_shouldReturnFalse_whenTokenIsNull() {
+                // Act
+                boolean result = refreshTokenService.delete(null);
 
-                when(refreshTokenRepository.findByToken(token))
-                                .thenReturn(Optional.empty());
+                // Assert
+                assertFalse(result);
 
-                // Act + Assert
-                RuntimeException ex = assertThrows(
-                                RuntimeException.class,
-                                () -> refreshTokenService.delete(token));
+                // Verify repository is never called
+                verify(refreshTokenRepository, never()).deleteById(anyString());
+        }
 
-                assertEquals("Token is invalid or not found", ex.getMessage());
+        @Test
+        void delete_shouldReturnFalse_whenTokenIsBlank() {
+                //Act
+                boolean result = refreshTokenService.delete(" ");
 
-                verify(refreshTokenRepository).findByToken(token);
+                // 
+                assertFalse(result);
+
+                // Verify repository is never called
                 verify(refreshTokenRepository, never()).deleteById(anyString());
         }
 
@@ -175,7 +167,7 @@ public class RefreshTokenServiceTest {
                                 .token("ok")
                                 .userId(UUID.randomUUID())
                                 .username("john")
-                                .roles(Set.of("ROLE_USER"))
+                                .role("ROLE_USER")
                                 .expiration(TTL)
                                 .build();
 
