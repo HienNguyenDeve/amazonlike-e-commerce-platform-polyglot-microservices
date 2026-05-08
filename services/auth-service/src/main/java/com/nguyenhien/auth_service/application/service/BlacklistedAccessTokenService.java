@@ -17,6 +17,9 @@ public class BlacklistedAccessTokenService implements IBlacklistedAccessTokenSer
 
     @Override
     public void blacklist(String accessToken) {
+        if (accessToken == null || accessToken.isBlank()) {
+            return;
+        }
         // Check accessToken còn hạn hay không? nếu không trả về
         Long ttl = tokenService.getRemainingExpiration(accessToken);
 
