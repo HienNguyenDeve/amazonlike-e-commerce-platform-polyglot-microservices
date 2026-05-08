@@ -1,9 +1,6 @@
 package com.nguyenhien.auth_service.application.service;
 
 import java.util.List;
-import java.util.Set;
-import java.util.UUID;
-import java.util.stream.Collectors;
 
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
@@ -30,7 +27,6 @@ import com.nguyenhien.auth_service.application.interfaces.IAuthService;
 import com.nguyenhien.auth_service.application.interfaces.IBlacklistedAccessTokenService;
 import com.nguyenhien.auth_service.application.interfaces.IRefreshTokenService;
 import com.nguyenhien.auth_service.application.interfaces.ITokenService;
-import com.nguyenhien.auth_service.domain.enums.UserRole;
 import com.nguyenhien.auth_service.domain.model.RefreshToken;
 import com.nguyenhien.auth_service.domain.repository.IRefreshTokenRepository;
 import com.nguyenhien.auth_service.infrastructure.persistence.entity.UserEntity;
@@ -102,14 +98,15 @@ public class AuthService implements IAuthService, UserDetailsService {
                         // Generate Refresh token
                         UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
                         UserEntity user = userDetails.getUser();
-                        Set<String> roleStrings = user.getRoles().stream().map(UserRole::toString).collect(Collectors.toSet());
+                        String roleString = user.getRole().toString();
                         CreateRefreshTokenRequest createRefreshTokenRequest = CreateRefreshTokenRequest
                                         .builder()
                                         .userId(user.getId())
                                         .username(user.getUsername())
-                                        .roles(roleStrings)
+                                        .role(roleString)
                                         .build();
-                        RefreshToken newRefreshToken = refreshTokenService.createRefreshToken(createRefreshTokenRequest);
+                        RefreshToken newRefreshToken = refreshTokenService
+                                        .createRefreshToken(createRefreshTokenRequest);
 
                         List<String> roles = userDetails.getAuthorities().stream()
                                         .map(GrantedAuthority::getAuthority)
@@ -139,12 +136,11 @@ public class AuthService implements IAuthService, UserDetailsService {
                 var oldRefreshToken = refreshTokenRepository.findByToken(request.getRefreshToken())
                                 .orElseThrow(() -> new RuntimeException("Token is invalid or expired"));
 
-                List<SimpleGrantedAuthority> authorities = oldRefreshToken.getRoles().stream()
-                                .map(SimpleGrantedAuthority::new).toList();
+                List<SimpleGrantedAuthority> authorities = List
+                                .of(new SimpleGrantedAuthority("ROLE_" + oldRefreshToken.getRole()));
 
                 User principal = new User(oldRefreshToken.getUsername(), "", authorities);
-                Authentication authentication = new 
-                        UsernamePasswordAuthenticationToken(principal, null, authorities);
+                Authentication authentication = new UsernamePasswordAuthenticationToken(principal, null, authorities);
 
                 // Generate new access and refresh token
                 String newAccessToken = tokenService.generateToken(authentication);
@@ -152,7 +148,7 @@ public class AuthService implements IAuthService, UserDetailsService {
                                 .builder()
                                 .userId(oldRefreshToken.getUserId())
                                 .username(oldRefreshToken.getUsername())
-                                .roles(oldRefreshToken.getRoles())
+                                .role(oldRefreshToken.getRole())
                                 .build();
                 RefreshToken newRefreshToken = refreshTokenService.createRefreshToken(createRefreshTokenRequest);
                 UserResponse userInfo = UserResponse
@@ -172,7 +168,20 @@ public class AuthService implements IAuthService, UserDetailsService {
 
         @Override
         public MessageResponse revokeToken(String token, String reason) {
-                refreshTokenService.delete(token);
+                if (token == null || token.isBlank()) {
+                        return MessageResponse.builder()
+                                        .message("Refresh token is required")
+                                        .success(false)
+                                        .build();
+                }
+                boolean result = refreshTokenService.delete(token);
+                if (!result) {
+                        return MessageResponse
+                                        .builder()
+                                        .message("Token faluire revoke")
+                                        .success(false)
+                                        .build();
+                }
 
                 // return
                 return MessageResponse
