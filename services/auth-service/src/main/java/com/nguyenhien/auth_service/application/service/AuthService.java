@@ -1,6 +1,8 @@
 package com.nguyenhien.auth_service.application.service;
 
+import java.time.Instant;
 import java.util.List;
+import java.util.UUID;
 
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
@@ -23,6 +25,8 @@ import com.nguyenhien.auth_service.api.request.RegisterRequest;
 import com.nguyenhien.auth_service.api.response.JwtResponse;
 import com.nguyenhien.auth_service.api.response.MessageResponse;
 import com.nguyenhien.auth_service.api.response.UserResponse;
+import com.nguyenhien.auth_service.application.event.message.UserRegisterEvent;
+import com.nguyenhien.auth_service.application.event.producer.AuthEventProducer;
 import com.nguyenhien.auth_service.application.interfaces.IAuthService;
 import com.nguyenhien.auth_service.application.interfaces.IBlacklistedAccessTokenService;
 import com.nguyenhien.auth_service.application.interfaces.IRefreshTokenService;
@@ -45,6 +49,7 @@ public class AuthService implements IAuthService, UserDetailsService {
         private final IRefreshTokenRepository refreshTokenRepository;
         private final IRefreshTokenService refreshTokenService;
         private final IBlacklistedAccessTokenService blacklistedAccessTokenService;
+        private final AuthEventProducer authEventProducer;
 
         @Override
         public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
@@ -69,7 +74,11 @@ public class AuthService implements IAuthService, UserDetailsService {
                                 .email(request.getEmail())
                                 .passwordHash(passwordEncoder.encode(request.getPassword()))
                                 .build();
-                userRepository.save(user);
+                var savedUser = userRepository.save(user);
+
+                UserRegisterEvent event = new UserRegisterEvent(UUID.randomUUID(), savedUser.getId(), savedUser.getEmail(), Instant.now());
+
+                authEventProducer.publishUserRegistered(event);
 
                 return MessageResponse.builder()
                                 .message("Regisgter Successfully")
