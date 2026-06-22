@@ -3,7 +3,7 @@ package com.nguyenhien.auth_service.application.event.producer;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
 
-import com.nguyenhien.auth_service.application.event.message.UserRegisterEvent;
+import com.nguyenhien.auth_service.application.event.message.UserRegisteredEvent;
 
 import lombok.RequiredArgsConstructor;
 
@@ -12,7 +12,12 @@ import lombok.RequiredArgsConstructor;
 public class AuthEventProducer {
     private final KafkaTemplate<String, Object> kafkaTemplate;
 
-    public void publishUserRegistered(UserRegisterEvent event) {
-        kafkaTemplate.send("user.registered", event);
+    public void publishUserRegistered(UserRegisteredEvent event) {
+        try {
+            kafkaTemplate.send("user.registered", event);
+            System.out.println("EVENT SEND");
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 }
