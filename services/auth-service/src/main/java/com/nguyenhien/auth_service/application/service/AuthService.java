@@ -25,7 +25,7 @@ import com.nguyenhien.auth_service.api.request.RegisterRequest;
 import com.nguyenhien.auth_service.api.response.JwtResponse;
 import com.nguyenhien.auth_service.api.response.MessageResponse;
 import com.nguyenhien.auth_service.api.response.UserResponse;
-import com.nguyenhien.auth_service.application.event.message.UserRegisterEvent;
+import com.nguyenhien.auth_service.application.event.message.UserRegisteredEvent;
 import com.nguyenhien.auth_service.application.event.producer.AuthEventProducer;
 import com.nguyenhien.auth_service.application.interfaces.IAuthService;
 import com.nguyenhien.auth_service.application.interfaces.IBlacklistedAccessTokenService;
@@ -76,7 +76,7 @@ public class AuthService implements IAuthService, UserDetailsService {
                                 .build();
                 var savedUser = userRepository.save(user);
 
-                UserRegisterEvent event = new UserRegisterEvent(UUID.randomUUID(), savedUser.getId(), savedUser.getEmail(), Instant.now());
+                UserRegisteredEvent event = new UserRegisteredEvent(UUID.randomUUID(), savedUser.getId(), savedUser.getEmail(), Instant.now());
 
                 authEventProducer.publishUserRegistered(event);
 
