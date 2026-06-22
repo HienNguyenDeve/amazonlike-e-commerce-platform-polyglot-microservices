@@ -9,7 +9,7 @@ set -e
 
 echo "Starting infrastructure..."
 cd infra/docker
-docker compose up -d
+docker compose up -dstart
 cd ../..
 
 echo "Starting api-gateway..."
@@ -17,6 +17,9 @@ osascript -e 'tell application "Terminal" to do script "cd \"'"$(pwd)"'/services
 
 echo "Starting auth-service..."
 osascript -e 'tell application "Terminal" to do script "cd \"'"$(pwd)"'/services/auth-service\" && ./mvnw spring-boot:run"'
+
+echo "Starting user-service..."
+osascript -e 'tell application "Terminal" to do script "cd \"'"$(pwd)"'/services/user-service\" && ./mvnw spring-boot:run"'
 
 echo "Starting product-service..."
 osascript -e 'tell application "Terminal" to do script "cd \"'"$(pwd)"'/services/product-service\" && ./mvnw spring-boot:run"'
