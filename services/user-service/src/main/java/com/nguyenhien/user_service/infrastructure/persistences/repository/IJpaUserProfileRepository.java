@@ -1,5 +1,6 @@
 package com.nguyenhien.user_service.infrastructure.persistences.repository;
 
+import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -8,4 +9,5 @@ import com.nguyenhien.user_service.infrastructure.persistences.entity.UserProfil
 
 public interface IJpaUserProfileRepository extends JpaRepository<UserProfileEntity, UUID>{
     boolean existsByAuthUserId(UUID authUserId);
+    Optional<UserProfileEntity> findByAuthUserId(UUID authUserId);
 }

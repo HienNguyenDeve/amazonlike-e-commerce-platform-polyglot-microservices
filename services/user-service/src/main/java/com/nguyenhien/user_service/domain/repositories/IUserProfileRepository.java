@@ -12,4 +12,6 @@ public interface IUserProfileRepository {
 
     Optional<UserProfile> findById(UUID id);
 
+    Optional<UserProfile> findByAuthUserId(UUID id);
+
 }
