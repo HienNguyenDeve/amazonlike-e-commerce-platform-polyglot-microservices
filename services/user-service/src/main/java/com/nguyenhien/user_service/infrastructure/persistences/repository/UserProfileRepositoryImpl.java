@@ -39,4 +39,10 @@ public class UserProfileRepositoryImpl implements IUserProfileRepository {
             .map(mapper::toModel);
     }
 
+    @Override
+    public Optional<UserProfile> findByAuthUserId(UUID id) {
+        return jpaUserProfileRepository.findByAuthUserId(id)
+                .map(mapper::toModel);
+    }
+
 }
