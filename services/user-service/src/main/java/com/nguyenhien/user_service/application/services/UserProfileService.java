@@ -30,30 +30,17 @@ public class UserProfileService implements IUserProfileService {
         @Override
         public UserProfileResponse getUserProfile(UUID userProfileId) {
                 UserProfile profile = userProfileRepository.findById(userProfileId)
-                                .orElseThrow(
-                                                () -> new UserProfileNotFoundException(
-                                                                userProfileId));
-
-                UserProfileCreatedEvent event = new UserProfileCreatedEvent(
-                                UUID.randomUUID(),
-                                profile.getId(),
-                                profile.getAuthUserId(),
-                                profile.getEmail(),
-                                Instant.now());
-
-                userProfileCreatedProducer.publishUserProfileCreated(
-                                event);
+                        .orElseThrow(() -> new UserProfileNotFoundException(userProfileId));
 
                 return dtoMapper.toResponse(profile);
 
         }
 
         @Override
-        public UserProfileResponse updateUserProfile(UUID userProfileId, UpdateUserProfileRequest request) {
+        public UserProfileResponse updateUserProfile(UUID userProfileId, 
+                                        UpdateUserProfileRequest request) {
                 UserProfile profile = userProfileRepository.findById(userProfileId)
-                                .orElseThrow(
-                                                () -> new UserProfileNotFoundException(
-                                                                userProfileId));
+                        .orElseThrow(() -> new UserProfileNotFoundException(userProfileId));
 
                 profile.updateProfile(
                                 request.fullName(),
