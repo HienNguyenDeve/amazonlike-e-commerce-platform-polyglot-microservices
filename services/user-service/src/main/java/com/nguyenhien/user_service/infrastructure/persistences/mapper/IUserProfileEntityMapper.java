@@ -1,7 +1,6 @@
 package com.nguyenhien.user_service.infrastructure.persistences.mapper;
 
 import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
 import org.mapstruct.MappingConstants;
 import org.mapstruct.ReportingPolicy;
 

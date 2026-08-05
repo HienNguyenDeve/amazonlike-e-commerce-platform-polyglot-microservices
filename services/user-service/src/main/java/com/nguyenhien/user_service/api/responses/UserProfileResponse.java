@@ -9,30 +9,34 @@ import com.nguyenhien.user_service.domain.enums.UserStatus;
 
 public record UserProfileResponse(
 
-        UUID id,
+                UUID id,
 
-        UUID authUserId,
+                UUID authUserId,
 
-        String email,
+                String email,
 
-        String fullName,
+                String fullName,
 
-        String phone,
+                String phone,
 
-        Gender gender,
+                Gender gender,
 
-        LocalDate birthday,
+                LocalDate birthday,
 
-        String avatarUrl,
+                String avatarUrl,
 
-        UserStatus status,
+                UserStatus status,
 
-        boolean profileCompleted,
+                boolean profileCompleted,
 
-        Long loyaltyPoint,
+                Long loyaltyPoint,
 
-        Instant createdAt,
+                Instant createdAt,
 
-        Instant updatedAt
-) {
+                Instant updatedAt) {
+
+        // Custom no-argument constructor
+        public UserProfileResponse() {
+                this(null, null, "", "", "", null, null, "", null, false, 0L, null, null);
+        }
 }

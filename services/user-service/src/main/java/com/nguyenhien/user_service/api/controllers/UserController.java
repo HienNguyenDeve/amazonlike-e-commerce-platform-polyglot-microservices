@@ -25,7 +25,7 @@ public class UserController {
 
     @GetMapping("/{id}")
     public ResponseEntity<UserProfileResponse> getUserProfile(
-            @PathVariable UUID id) {
+            @PathVariable("id") UUID id) {
 
         UserProfileResponse response = userProfileService.getUserProfile(id);
 
@@ -34,7 +34,7 @@ public class UserController {
 
     @PutMapping("/{id}")
     public ResponseEntity<UserProfileResponse> updateUserProfile(
-            @PathVariable UUID id,
+            @PathVariable("id") UUID id,
             @Valid @RequestBody UpdateUserProfileRequest request) {
 
         UserProfileResponse response = userProfileService.updateUserProfile(id, request);
