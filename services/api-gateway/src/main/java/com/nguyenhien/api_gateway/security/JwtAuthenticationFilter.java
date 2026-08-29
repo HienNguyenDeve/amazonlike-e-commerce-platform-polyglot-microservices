@@ -24,94 +24,72 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter implements WebFilter {
 
-    private final JwtValidator validator;
+  private final JwtValidator validator;
 
-    private final JwtTokenProvider provider;
+  private final JwtTokenProvider provider;
 
-    private final JwtAuthenticationConverter converter;
+  private final JwtAuthenticationConverter converter;
 
-    private static final PathPatternParser PATH_PATTERN_PARSER = new PathPatternParser();
+  private static final PathPatternParser PATH_PATTERN_PARSER = new PathPatternParser();
 
-    @Override
-    public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
-        if (isPublicEndpoint(exchange)) {
-            return chain.filter(exchange);
-        }
-
-        String token = extractToken(exchange);
-
-        Claims claims = validator.validate(token);
-
-        CurrentUserPrincipal principal = provider.getPrincipal(claims);
-
-        Authentication authentication = converter.convert(principal);
-
-        ServerWebExchange mutatedExchange = mutateHeaders(exchange, principal);
-
-        return chain.filter(mutatedExchange)
-                .contextWrite(
-                        ReactiveSecurityContextHolder.withAuthentication(authentication));
+  @Override
+  public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
+    if (isPublicEndpoint(exchange)) {
+      return chain.filter(exchange);
     }
 
-    private ServerWebExchange mutateHeaders(ServerWebExchange exchange, CurrentUserPrincipal principal) {
-        ServerHttpRequest request = exchange.getRequest()
+    String token = extractToken(exchange);
 
-                .mutate()
+    Claims claims = validator.validate(token);
 
-                .header(
-                        SecurityConstants.USER_ID_HEADER,
-                        principal.getUserId().toString())
+    CurrentUserPrincipal principal = provider.getPrincipal(claims);
 
-                .header(
-                        SecurityConstants.USERNAME,
-                        principal.getUsername())
+    Authentication authentication = converter.convert(principal);
 
-                .header(
-                        SecurityConstants.EMAIL_HEADER,
-                        principal.getEmail())
+    ServerWebExchange mutatedExchange = mutateHeaders(exchange, principal);
 
-                .header(
-                        SecurityConstants.ROLE_HEADER,
-                        String.join(",", principal.getRoles()))
+    return chain
+        .filter(mutatedExchange)
+        .contextWrite(ReactiveSecurityContextHolder.withAuthentication(authentication));
+  }
 
-                .build();
+  private ServerWebExchange mutateHeaders(
+      ServerWebExchange exchange, CurrentUserPrincipal principal) {
+    ServerHttpRequest request =
+        exchange
+            .getRequest()
+            .mutate()
+            .header(SecurityConstants.USER_ID_HEADER, principal.getUserId().toString())
+            .header(SecurityConstants.USERNAME, principal.getUsername())
+            .header(SecurityConstants.EMAIL_HEADER, principal.getEmail())
+            .header(SecurityConstants.ROLE_HEADER, String.join(",", principal.getRoles()))
+            .build();
 
-        return exchange.mutate()
+    return exchange.mutate().request(request).build();
+  }
 
-                .request(request)
+  private String extractToken(ServerWebExchange exchange) {
+    String authorizationHeader =
+        exchange.getRequest().getHeaders().getFirst(SecurityConstants.AUTHORIZATION_HEADER);
 
-                .build();
+    if (!StringUtils.hasText(authorizationHeader)) {
+
+      throw new MissingTokenException();
     }
 
-    private String extractToken(ServerWebExchange exchange) {
-        String authorizationHeader = exchange.getRequest()
-                .getHeaders()
-                .getFirst(SecurityConstants.AUTHORIZATION_HEADER);
+    if (!authorizationHeader.startsWith(SecurityConstants.BEARER)) {
 
-        if (!StringUtils.hasText(authorizationHeader)) {
-
-            throw new MissingTokenException();
-
-        }
-
-        if (!authorizationHeader.startsWith(SecurityConstants.BEARER)) {
-
-            throw new InvalidTokenException();
-
-        }
-
-        return authorizationHeader.substring(
-                SecurityConstants.BEARER.length());
+      throw new InvalidTokenException();
     }
 
-    private boolean isPublicEndpoint(ServerWebExchange exchange) {
-        String requestPath = exchange.getRequest()
-                .getURI()
-                .getPath();
+    return authorizationHeader.substring(SecurityConstants.BEARER.length());
+  }
 
-        return Arrays.stream(SecurityConstants.PUBLIC_ENDPOINTS)
-                .map(PATH_PATTERN_PARSER::parse)
-                .anyMatch(pattern -> pattern.matches(PathContainer.parsePath(requestPath)));
-    }
+  private boolean isPublicEndpoint(ServerWebExchange exchange) {
+    String requestPath = exchange.getRequest().getURI().getPath();
 
+    return Arrays.stream(SecurityConstants.PUBLIC_ENDPOINTS.toArray(String[]::new))
+        .map(PATH_PATTERN_PARSER::parse)
+        .anyMatch(pattern -> pattern.matches(PathContainer.parsePath(requestPath)));
+  }
 }

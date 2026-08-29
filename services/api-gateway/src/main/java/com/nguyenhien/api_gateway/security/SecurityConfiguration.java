@@ -13,32 +13,25 @@ import lombok.RequiredArgsConstructor;
 @EnableWebFluxSecurity
 @RequiredArgsConstructor
 public class SecurityConfiguration {
-    private final AuthenticationEntryPoint authenticationEntryPoint;
+  private final AuthenticationEntryPoint authenticationEntryPoint;
 
-    @Bean
-    public SecurityWebFilterChain springSecurityFilterChain(ServerHttpSecurity http) {
+  @Bean
+  public SecurityWebFilterChain springSecurityFilterChain(ServerHttpSecurity http) {
 
-        return http
-                .csrf(ServerHttpSecurity.CsrfSpec::disable)
-                .httpBasic(ServerHttpSecurity.HttpBasicSpec::disable)
-                .formLogin(ServerHttpSecurity.FormLoginSpec::disable)
-                .logout(ServerHttpSecurity.LogoutSpec::disable)
-                .securityContextRepository(
-                        NoOpServerSecurityContextRepository.getInstance()
-                )
-                .exceptionHandling(exception ->
-                        exception.authenticationEntryPoint(
-                                authenticationEntryPoint
-                        )
-                )
-                .authorizeExchange(exchange -> exchange
-                        .pathMatchers(
-                                SecurityConstants.PUBLIC_ENDPOINTS
-                        )
-                        .permitAll()
-                        .anyExchange()
-                        .authenticated()
-                )
-                .build();
-    }
+    return http.csrf(ServerHttpSecurity.CsrfSpec::disable)
+        .httpBasic(ServerHttpSecurity.HttpBasicSpec::disable)
+        .formLogin(ServerHttpSecurity.FormLoginSpec::disable)
+        .logout(ServerHttpSecurity.LogoutSpec::disable)
+        .securityContextRepository(NoOpServerSecurityContextRepository.getInstance())
+        .exceptionHandling(
+            exception -> exception.authenticationEntryPoint(authenticationEntryPoint))
+        .authorizeExchange(
+            exchange ->
+                exchange
+                    .pathMatchers(SecurityConstants.PUBLIC_ENDPOINTS.toArray(String[]::new))
+                    .permitAll()
+                    .anyExchange()
+                    .authenticated())
+        .build();
+  }
 }
