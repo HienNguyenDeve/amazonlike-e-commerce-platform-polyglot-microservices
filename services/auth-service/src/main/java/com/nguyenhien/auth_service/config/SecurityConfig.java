@@ -1,7 +1,9 @@
 package com.nguyenhien.auth_service.config;
 
+import com.nguyenhien.auth_service.application.interfaces.IBlacklistedAccessTokenService;
+import com.nguyenhien.auth_service.application.interfaces.ITokenService;
 import java.util.Collections;
-
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -14,54 +16,57 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.filter.CorsFilter;
 
-import com.nguyenhien.auth_service.application.interfaces.IBlacklistedAccessTokenService;
-import com.nguyenhien.auth_service.application.interfaces.ITokenService;
-
-import lombok.RequiredArgsConstructor;
-
 @Configuration
 @EnableMethodSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
-    @Value("${app.frontend.url}")
-    private String frontendUrl;
-    private final ITokenService tokenService;
-    private final IBlacklistedAccessTokenService blacklistedAccessTokenService;
+  @Value("${app.frontend.url}")
+  private String frontendUrl;
 
-    @Bean
-    public CorsFilter corsFilter() {
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+  private final ITokenService tokenService;
+  private final IBlacklistedAccessTokenService blacklistedAccessTokenService;
 
-        CorsConfiguration config = new CorsConfiguration();
+  @Bean
+  public CorsFilter corsFilter() {
+    UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
 
-        config.setAllowCredentials(true);
-        // Allow specific origin: clientUrl
-        config.setAllowedOrigins(Collections.singletonList(frontendUrl));
-        // Allow all headers: Authorization, Content-Type, ...
-        config.addAllowedHeader("*");
-        // Allow all methods: GET, POST, PUT, DELETE,...
-        config.addAllowedMethod("*");
+    CorsConfiguration config = new CorsConfiguration();
 
-        // Apply the configuration to all paths
-        source.registerCorsConfiguration("/**", config);
+    config.setAllowCredentials(true);
+    // Allow specific origin: clientUrl
+    config.setAllowedOrigins(Collections.singletonList(frontendUrl));
+    // Allow all headers: Authorization, Content-Type, ...
+    config.addAllowedHeader("*");
+    // Allow all methods: GET, POST, PUT, DELETE,...
+    config.addAllowedMethod("*");
 
-        return new CorsFilter(source);
-    }
+    // Apply the configuration to all paths
+    source.registerCorsConfiguration("/**", config);
 
-    @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        // Disable CSRF
-        http.csrf(csrf -> csrf.disable())
-                // Add CORS filter
-                .addFilterBefore(corsFilter(), UsernamePasswordAuthenticationFilter.class)
-                // Add Jwt filter
-                .addFilterBefore(new JwtFilter(tokenService, blacklistedAccessTokenService), UsernamePasswordAuthenticationFilter.class)
-                // Filter requests
-                .authorizeHttpRequests(authorizeRequests -> authorizeRequests
-                                .requestMatchers("/api/v1/auth/**").permitAll()
-                                .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
-                                .anyRequest().authenticated())
-                .httpBasic(Customizer.withDefaults());
-        return http.build();
-    }
+    return new CorsFilter(source);
+  }
+
+  @Bean
+  public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    // Disable CSRF
+    http.csrf(csrf -> csrf.disable())
+        // Add CORS filter
+        .addFilterBefore(corsFilter(), UsernamePasswordAuthenticationFilter.class)
+        // Add Jwt filter
+        .addFilterBefore(
+            new JwtFilter(tokenService, blacklistedAccessTokenService),
+            UsernamePasswordAuthenticationFilter.class)
+        // Filter requests
+        .authorizeHttpRequests(
+            authorizeRequests ->
+                authorizeRequests
+                    .requestMatchers("/api/v1/auth/**")
+                    .permitAll()
+                    .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html")
+                    .permitAll()
+                    .anyRequest()
+                    .authenticated())
+        .httpBasic(Customizer.withDefaults());
+    return http.build();
+  }
 }

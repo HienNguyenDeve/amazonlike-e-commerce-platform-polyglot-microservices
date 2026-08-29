@@ -1,67 +1,63 @@
 package com.nguyenhien.auth_service.application.service;
 
-import java.util.List;
-import java.util.UUID;
-
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
-
 import com.nguyenhien.auth_service.api.request.CreateRefreshTokenRequest;
 import com.nguyenhien.auth_service.application.interfaces.IRefreshTokenService;
 import com.nguyenhien.auth_service.common.exception.TokenRefreshException;
 import com.nguyenhien.auth_service.domain.model.RefreshToken;
 import com.nguyenhien.auth_service.domain.repository.IRefreshTokenRepository;
-
+import java.util.List;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
 
 @RequiredArgsConstructor
 @Service
 public class RefreshTokenService implements IRefreshTokenService {
-    private final IRefreshTokenRepository refreshTokenRepository;
+  private final IRefreshTokenRepository refreshTokenRepository;
 
-    @Value("${app.security.refreshTokenExpiration}")
-    private Long refreshTokenExpiration;
+  @Value("${app.security.refreshTokenExpiration}")
+  private Long refreshTokenExpiration;
 
-    @Override
-    public RefreshToken createRefreshToken(CreateRefreshTokenRequest request) {
-        // Check hiện tại userId có đang có RefreshToken nào đang tồn tại không
-        List<RefreshToken> tokens = refreshTokenRepository.findAllByUserId(request.getUserId());
-        if (!tokens.isEmpty()) {
-            refreshTokenRepository.deleteAll(tokens);
-        }
-
-        String newRefreshTokenStr = UUID.randomUUID().toString();
-        RefreshToken newRefreshToken = RefreshToken
-                .builder()
-                .token(newRefreshTokenStr)
-                .userId(request.getUserId())
-                .username(request.getUsername())
-                .role(request.getRole())
-                .expiration(refreshTokenExpiration)
-                .build();
-        refreshTokenRepository.save(newRefreshToken);
-        return newRefreshToken;
+  @Override
+  public RefreshToken createRefreshToken(CreateRefreshTokenRequest request) {
+    // Check hiện tại userId có đang có RefreshToken nào đang tồn tại không
+    List<RefreshToken> tokens = refreshTokenRepository.findAllByUserId(request.getUserId());
+    if (!tokens.isEmpty()) {
+      refreshTokenRepository.deleteAll(tokens);
     }
 
-    @Override
-    public boolean delete(String token) {
-        // Find token
-        if (token == null || token.isBlank()) {
-            return false;
-        }
+    String newRefreshTokenStr = UUID.randomUUID().toString();
+    RefreshToken newRefreshToken =
+        RefreshToken.builder()
+            .token(newRefreshTokenStr)
+            .userId(request.getUserId())
+            .username(request.getUsername())
+            .role(request.getRole())
+            .expiration(refreshTokenExpiration)
+            .build();
+    refreshTokenRepository.save(newRefreshToken);
+    return newRefreshToken;
+  }
 
-        // if token found
-        refreshTokenRepository.deleteById(token);
-        return true;
+  @Override
+  public boolean delete(String token) {
+    // Find token
+    if (token == null || token.isBlank()) {
+      return false;
     }
 
-    @Override
-    public RefreshToken verifyExpiration(RefreshToken token) {
-        if (token == null) {
-            throw new TokenRefreshException(null, "Refresh token was expired. Please sign in again.");
-        }
+    // if token found
+    refreshTokenRepository.deleteById(token);
+    return true;
+  }
 
-        return token;
+  @Override
+  public RefreshToken verifyExpiration(RefreshToken token) {
+    if (token == null) {
+      throw new TokenRefreshException(null, "Refresh token was expired. Please sign in again.");
     }
 
+    return token;
+  }
 }

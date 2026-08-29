@@ -4,12 +4,12 @@ import com.nguyenhien.auth_service.api.request.CreateRefreshTokenRequest;
 import com.nguyenhien.auth_service.domain.model.RefreshToken;
 
 public interface IRefreshTokenService {
-    //Create
-    RefreshToken createRefreshToken(CreateRefreshTokenRequest request);
+  // Create
+  RefreshToken createRefreshToken(CreateRefreshTokenRequest request);
 
-    // Delete
-    boolean delete(String token);
+  // Delete
+  boolean delete(String token);
 
-    // Verify
-    RefreshToken verifyExpiration(RefreshToken token);
+  // Verify
+  RefreshToken verifyExpiration(RefreshToken token);
 }

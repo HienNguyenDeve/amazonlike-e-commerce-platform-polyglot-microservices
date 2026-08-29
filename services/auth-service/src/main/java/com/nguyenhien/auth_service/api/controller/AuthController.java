@@ -28,113 +28,78 @@ import lombok.RequiredArgsConstructor;
 @RequestMapping("/api/v1/auth")
 @RequiredArgsConstructor
 public class AuthController {
-    private final IAuthService authService;
+  private final IAuthService authService;
 
-    // @GetMapping("/health")
-    // public String health() {
-    //     return "auth-service ok";
-    // }
+  // @GetMapping("/health")
+  // public String health() {
+  // return "auth-service ok";
+  // }
 
-    // Register
-    @PostMapping("/register")
-    @Operation(summary = "Sign up an acount", description = "Register API", responses = {
-            @ApiResponse(responseCode = "201", description = "Register successfully"),
-            @ApiResponse(responseCode = "401", description = "Register failure")
-    })
-    public ResponseEntity<?> register(
-            @Valid @RequestBody RegisterRequest dto,
-            BindingResult bindingResult) {
-        if (bindingResult.hasErrors()) {
-            return ResponseEntity.badRequest().body(bindingResult.getAllErrors());
-        }
-        var userMasterDTO = authService.register(dto);
-        return ResponseEntity.ok(userMasterDTO);
+  // Register
+  @PostMapping("/register")
+  @Operation(summary = "Sign up an acount", description = "Register API", responses = {
+      @ApiResponse(responseCode = "201", description = "Register successfully"),
+      @ApiResponse(responseCode = "401", description = "Register failure")
+  })
+  public ResponseEntity<?> register(
+      @Valid @RequestBody RegisterRequest dto, BindingResult bindingResult) {
+    if (bindingResult.hasErrors()) {
+      return ResponseEntity.badRequest().body(bindingResult.getAllErrors());
     }
+    var userMasterDTO = authService.register(dto);
+    return ResponseEntity.ok(userMasterDTO);
+  }
 
-    // Login
-    @PostMapping("/login")
-    @Operation(summary = "Authenticate user", description = "User authenticate and return JWT", responses = {
-            @ApiResponse(responseCode = "200", description = "Successfully authenticated"),
-            @ApiResponse(responseCode = "401", description = "Invalid username or password")
+  // Login
+  @PostMapping("/login")
+  @Operation(summary = "Authenticate user", description = "User authenticate and return JWT", responses = {
+      @ApiResponse(responseCode = "200", description = "Successfully authenticated"),
+      @ApiResponse(responseCode = "401", description = "Invalid username or password")
+  })
+  public ResponseEntity<?> login(
+      @Valid @RequestBody LoginRequest loginRequestDTO, BindingResult bindingResult) {
+    if (bindingResult.hasErrors()) {
+      return ResponseEntity.badRequest().body(bindingResult.getAllErrors());
     }
+    var result = authService.login(loginRequestDTO);
+    return ResponseEntity.ok(result);
+  }
 
-    )
-    public ResponseEntity<?> login(
-            @Valid @RequestBody LoginRequest loginRequestDTO,
-            BindingResult bindingResult) {
-        if (bindingResult.hasErrors()) {
-            return ResponseEntity.badRequest().body(bindingResult.getAllErrors());
-        }
-        var result = authService.login(loginRequestDTO);
-        return ResponseEntity.ok(result);
-    }
+  // Refresh Token
+  @PostMapping("/refresh-token")
+  @Operation(summary = "Refresh Token", description = "Refresh token to get new accesstoken and new refresh token", responses = {
+      @ApiResponse(responseCode = "200", description = "Successfully fresh token", content = @Content(schema = @Schema(implementation = JwtResponse.class))),
+      @ApiResponse(responseCode = "403", description = "Invalid refresh token")
+  })
+  public ResponseEntity<JwtResponse> refreshToken(
+      @RequestBody RefreshTokenRequest refreshTokenRequestDTO,
+      HttpServletRequest httpServletRequest) {
+    var result = authService.refreshToken(refreshTokenRequestDTO);
+    return ResponseEntity.ok(result);
+  }
 
-    // Refresh Token
-    @PostMapping("/refresh-token")
-    @Operation(
-        summary="Refresh Token",
-        description="Refresh token to get new accesstoken and new refresh token",
-        responses={
-            @ApiResponse(
-                responseCode="200",
-                description="Successfully fresh token",
-                content=@Content(schema=@Schema(implementation=JwtResponse.class))
-            ),
-            @ApiResponse(
-                responseCode="403",
-                description="Invalid refresh token"
-            )
-        }
-    )
-    public ResponseEntity<JwtResponse> refreshToken(
-        @RequestBody RefreshTokenRequest refreshTokenRequestDTO, 
-        HttpServletRequest httpServletRequest) {
-        var result = authService.refreshToken(refreshTokenRequestDTO);
-        return ResponseEntity.ok(result);
-    }
+  // Revoke Token
+  @PostMapping("revoke-token")
+  @Operation(summary = "Revoke token", description = "Revoke refresh token when user logout, or have issue", responses = {
+      @ApiResponse(responseCode = "200", description = "Successfully revoke refresh token", content = @Content(schema = @Schema(implementation = MessageResponse.class))),
+      @ApiResponse(responseCode = "400", description = "Invalid or token notfound")
+  })
+  public ResponseEntity<MessageResponse> revokeToken(
+      @RequestBody RevokeTokenRequest revokeTokenRequestDTO,
+      HttpServletRequest httpServletRequest) {
+    var result = authService.revokeToken(
+        revokeTokenRequestDTO.getToken(), revokeTokenRequestDTO.getReason());
+    return ResponseEntity.ok(result);
+  }
 
-    // Revoke Token
-    @PostMapping("revoke-token")
-    @Operation(
-        summary="Revoke token",
-        description="Revoke refresh token when user logout, or have issue",
-        responses = {
-            @ApiResponse(
-                responseCode="200",
-                description="Successfully revoke refresh token",
-                content=@Content(schema=@Schema(implementation=MessageResponse.class))
-            ),
-            @ApiResponse(
-                responseCode="400",
-                description="Invalid or token notfound"
-            )
-        }
-    )
-    public ResponseEntity<MessageResponse> revokeToken(
-                @RequestBody RevokeTokenRequest revokeTokenRequestDTO,
-                HttpServletRequest httpServletRequest) {
-        var result = authService.revokeToken(revokeTokenRequestDTO.getToken(), 
-                                        revokeTokenRequestDTO.getReason());
-        return ResponseEntity.ok(result);
-    }
-
-    // Logout
-    @PostMapping("/logout")
-    @Operation(
-        summary = "Logout user",
-        description = "Invalidate refresh token for user",
-        responses = {
-            @ApiResponse(
-                responseCode = "200",
-                description = "Successfully log out",
-                content = @Content(schema = @Schema(implementation = MessageResponse.class))
-            )
-        }
-    )
-    public ResponseEntity<MessageResponse> logout (
-                @RequestBody LogoutRequest logoutRequestDTO, 
-                HttpServletRequest request) {
-        var result = authService.logout(logoutRequestDTO);
-        return ResponseEntity.ok(result);
-    }
+  // Logout
+  @PostMapping("/logout")
+  @Operation(summary = "Logout user", description = "Invalidate refresh token for user", responses = {
+      @ApiResponse(responseCode = "200", description = "Successfully log out", content = @Content(schema = @Schema(implementation = MessageResponse.class)))
+  })
+  public ResponseEntity<MessageResponse> logout(
+      @RequestBody LogoutRequest logoutRequestDTO, HttpServletRequest request) {
+    var result = authService.logout(logoutRequestDTO);
+    return ResponseEntity.ok(result);
+  }
 }

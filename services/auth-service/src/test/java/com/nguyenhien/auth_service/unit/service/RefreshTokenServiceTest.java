@@ -1,188 +1,174 @@
 package com.nguyenhien.auth_service.unit.service;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.UUID;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.test.util.ReflectionTestUtils;
 
 import com.nguyenhien.auth_service.api.request.CreateRefreshTokenRequest;
 import com.nguyenhien.auth_service.application.service.RefreshTokenService;
 import com.nguyenhien.auth_service.common.exception.TokenRefreshException;
 import com.nguyenhien.auth_service.domain.model.RefreshToken;
 import com.nguyenhien.auth_service.domain.repository.IRefreshTokenRepository;
+import java.util.Collections;
+import java.util.List;
+import java.util.UUID;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
 public class RefreshTokenServiceTest {
-        // Mock
-        @Mock
-        private IRefreshTokenRepository refreshTokenRepository;
+  // Mock
+  @Mock private IRefreshTokenRepository refreshTokenRepository;
 
-        // Inject Mocks
-        @InjectMocks
-        private RefreshTokenService refreshTokenService;
+  // Inject Mocks
+  @InjectMocks private RefreshTokenService refreshTokenService;
 
-        private static final Long TTL = 2592000L;
+  private static final Long TTL = 2592000L;
 
-        // Before Each
-        @BeforeEach
-        void setUp() {
-                ReflectionTestUtils.setField(
-                                refreshTokenService,
-                                "refreshTokenExpiration",
-                                TTL);
-        }
+  // Before Each
+  @BeforeEach
+  void setUp() {
+    ReflectionTestUtils.setField(refreshTokenService, "refreshTokenExpiration", TTL);
+  }
 
-        // Test
-        @Test
-        void createRefreshToken_shouldCreate_whenNoExistToken() {
-                // Arrange
-                UUID userId = UUID.randomUUID();
-                String role = "ROLE_USER";
+  // Test
+  @Test
+  void createRefreshToken_shouldCreate_whenNoExistToken() {
+    // Arrange
+    UUID userId = UUID.randomUUID();
+    String role = "ROLE_USER";
 
-                CreateRefreshTokenRequest request = CreateRefreshTokenRequest
-                                .builder()
-                                .userId(userId)
-                                .username("Nguyen")
-                                .role(role)
-                                .build();
+    CreateRefreshTokenRequest request =
+        CreateRefreshTokenRequest.builder().userId(userId).username("Nguyen").role(role).build();
 
-                when(refreshTokenRepository.findAllByUserId(userId)).thenReturn(Collections.emptyList());
+    when(refreshTokenRepository.findAllByUserId(userId)).thenReturn(Collections.emptyList());
 
-                when(refreshTokenRepository.save(any(RefreshToken.class)))
-                                .thenAnswer(invocation -> invocation.getArgument(0));
+    when(refreshTokenRepository.save(any(RefreshToken.class)))
+        .thenAnswer(invocation -> invocation.getArgument(0));
 
-                // Act
-                RefreshToken result = refreshTokenService.createRefreshToken(request);
+    // Act
+    RefreshToken result = refreshTokenService.createRefreshToken(request);
 
-                // Assert
-                assertNotNull(result);
-                assertNotNull(result.getToken());
-                assertEquals(userId, result.getUserId());
-                assertEquals("Nguyen", result.getUsername());
-                assertEquals(role, result.getRole());
-                assertEquals(TTL, result.getExpiration());
+    // Assert
+    assertNotNull(result);
+    assertNotNull(result.getToken());
+    assertEquals(userId, result.getUserId());
+    assertEquals("Nguyen", result.getUsername());
+    assertEquals(role, result.getRole());
+    assertEquals(TTL, result.getExpiration());
 
-                verify(refreshTokenRepository).findAllByUserId(userId);
-                verify(refreshTokenRepository, never()).deleteAll(anyList());
-                verify(refreshTokenRepository).save(any(RefreshToken.class));
-        }
+    verify(refreshTokenRepository).findAllByUserId(userId);
+    verify(refreshTokenRepository, never()).deleteAll(anyList());
+    verify(refreshTokenRepository).save(any(RefreshToken.class));
+  }
 
-        @Test
-        void createRefreshToken_shouldDeleteOldTokens_whenExistingTokens() {
-                // Arrange
-                UUID userId = UUID.randomUUID();
-                String role = "ROLE_USER";
+  @Test
+  void createRefreshToken_shouldDeleteOldTokens_whenExistingTokens() {
+    // Arrange
+    UUID userId = UUID.randomUUID();
+    String role = "ROLE_USER";
 
-                CreateRefreshTokenRequest request = CreateRefreshTokenRequest.builder()
-                                .userId(userId)
-                                .username("john")
-                                .role(role)
-                                .build();
+    CreateRefreshTokenRequest request =
+        CreateRefreshTokenRequest.builder().userId(userId).username("john").role(role).build();
 
-                RefreshToken old = RefreshToken.builder()
-                                .token("old-token")
-                                .userId(userId)
-                                .username("john")
-                                .role(role)
-                                .expiration(TTL)
-                                .build();
+    RefreshToken old =
+        RefreshToken.builder()
+            .token("old-token")
+            .userId(userId)
+            .username("john")
+            .role(role)
+            .expiration(TTL)
+            .build();
 
-                when(refreshTokenRepository.findAllByUserId(userId))
-                                .thenReturn(List.of(old));
+    when(refreshTokenRepository.findAllByUserId(userId)).thenReturn(List.of(old));
 
-                when(refreshTokenRepository.save(any(RefreshToken.class)))
-                                .thenAnswer(invocation -> invocation.getArgument(0));
+    when(refreshTokenRepository.save(any(RefreshToken.class)))
+        .thenAnswer(invocation -> invocation.getArgument(0));
 
-                // Act
-                RefreshToken result = refreshTokenService.createRefreshToken(request);
+    // Act
+    RefreshToken result = refreshTokenService.createRefreshToken(request);
 
-                // Assert
-                assertNotNull(result);
-                assertNotEquals("old-token", result.getToken());
+    // Assert
+    assertNotNull(result);
+    assertNotEquals("old-token", result.getToken());
 
-                verify(refreshTokenRepository).findAllByUserId(userId);
-                verify(refreshTokenRepository).deleteAll(List.of(old));
-                verify(refreshTokenRepository).save(any(RefreshToken.class));
-        }
+    verify(refreshTokenRepository).findAllByUserId(userId);
+    verify(refreshTokenRepository).deleteAll(List.of(old));
+    verify(refreshTokenRepository).save(any(RefreshToken.class));
+  }
 
-        @Test
-        void delete_shouldDelete_whenTokenExists() {
-                // Arrange
-                String token = "valid-token";
+  @Test
+  void delete_shouldDelete_whenTokenExists() {
+    // Arrange
+    String token = "valid-token";
 
-                // Act
-                refreshTokenService.delete(token);
+    // Act
+    refreshTokenService.delete(token);
 
-                // Assert
-                verify(refreshTokenRepository).deleteById(token);
-        }
+    // Assert
+    verify(refreshTokenRepository).deleteById(token);
+  }
 
-        @Test
-        void delete_shouldReturnFalse_whenTokenIsNull() {
-                // Act
-                boolean result = refreshTokenService.delete(null);
+  @Test
+  void delete_shouldReturnFalse_whenTokenIsNull() {
+    // Act
+    boolean result = refreshTokenService.delete(null);
 
-                // Assert
-                assertFalse(result);
+    // Assert
+    assertFalse(result);
 
-                // Verify repository is never called
-                verify(refreshTokenRepository, never()).deleteById(anyString());
-        }
+    // Verify repository is never called
+    verify(refreshTokenRepository, never()).deleteById(anyString());
+  }
 
-        @Test
-        void delete_shouldReturnFalse_whenTokenIsBlank() {
-                //Act
-                boolean result = refreshTokenService.delete(" ");
+  @Test
+  void delete_shouldReturnFalse_whenTokenIsBlank() {
+    // Act
+    boolean result = refreshTokenService.delete(" ");
 
-                // 
-                assertFalse(result);
+    //
+    assertFalse(result);
 
-                // Verify repository is never called
-                verify(refreshTokenRepository, never()).deleteById(anyString());
-        }
+    // Verify repository is never called
+    verify(refreshTokenRepository, never()).deleteById(anyString());
+  }
 
-        @Test
-        void verifyExpiration_shouldReturn_whenTokenNotNull() {
-                // Arrange
-                RefreshToken token = RefreshToken.builder()
-                                .token("ok")
-                                .userId(UUID.randomUUID())
-                                .username("john")
-                                .role("ROLE_USER")
-                                .expiration(TTL)
-                                .build();
+  @Test
+  void verifyExpiration_shouldReturn_whenTokenNotNull() {
+    // Arrange
+    RefreshToken token =
+        RefreshToken.builder()
+            .token("ok")
+            .userId(UUID.randomUUID())
+            .username("john")
+            .role("ROLE_USER")
+            .expiration(TTL)
+            .build();
 
-                // Act
-                RefreshToken result = refreshTokenService.verifyExpiration(token);
+    // Act
+    RefreshToken result = refreshTokenService.verifyExpiration(token);
 
-                // Assert
-                assertSame(token, result);
-        }
+    // Assert
+    assertSame(token, result);
+  }
 
-        @Test
-        void verifyExpiration_shouldThrow_whenTokenNull() {
-                // Act + Assert
-                assertThrows(
-                                TokenRefreshException.class,
-                                () -> refreshTokenService.verifyExpiration(null));
-        }
+  @Test
+  void verifyExpiration_shouldThrow_whenTokenNull() {
+    // Act + Assert
+    assertThrows(TokenRefreshException.class, () -> refreshTokenService.verifyExpiration(null));
+  }
 }
