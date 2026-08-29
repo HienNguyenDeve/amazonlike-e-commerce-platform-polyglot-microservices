@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ruleset name="Custom PMD Ruleset"
+    xmlns="http://sourceforge.net"
+    xmlns:xsi="http://w3.org"
+    xsi:schemaLocation="http://sourceforge.net https://sourceforge.io">
+
+    <description>Bộ luật PMD tùy chỉnh cho dự án AmazonLike</description>
+
+    <!-- 1. Luật cơ bản và lỗi logic tiềm ẩn (Lỗi NullPointer, lỗi gán biến...) -->
+    <rule ref="category/java/errorprone.xml">
+        <!-- Bỏ qua luật kiểm tra Logger vì Spring Boot hay dùng nhiều kiểu khai báo logger khác nhau -->
+        <exclude name="LoggerIsNotStaticFinal"/>
+    </rule>
+
+    <!-- 2. Luật tối ưu hiệu năng (Tránh tạo chuỗi thừa, tối ưu vòng lặp...) -->
+    <rule ref="category/java/performance.xml"/>
+
+    <!-- 3. Luật tối ưu thiết kế (Tránh viết class quá dài, độ phức tạp cyclomatic cao) -->
+    <rule ref="category/java/design.xml">
+        <!-- Bỏ qua luật ép buộc class tiện ích phải có thực thể (vì bạn đã dùng private constructor) -->
+        <exclude name="UseUtilityClass"/>
+        <!-- Bỏ qua luật đếm số lượng hàm public trong 1 class -->
+        <exclude name="TooManyMethods"/>
+    </rule>
+
+    <!-- 4. Luật dọn dẹp mã nguồn (Xóa import thừa, xóa biến không dùng đến) -->
+    <rule ref="category/java/codestyle.xml">
+        <!-- Bỏ qua luật ép buộc biến local phải là final -->
+        <exclude name="LocalVariableCouldBeFinal"/>
+        <!-- Bỏ qua luật ép buộc tham số hàm phải là final -->
+        <exclude name="MethodArgumentCouldBeFinal"/>
+        <!-- Bỏ qua luật ép viết Javadoc (giống Checkstyle) -->
+        <exclude name="CommentDefaultAccessModifier"/>
+    </rule>
+
+    <!-- Cấu hình lại bộ luật Code Style -->
+    <rule ref="category/java/codestyle.xml">
+        <!-- Tắt luật cấm dùng 'var' -->
+        <exclude name="UseExplicitTypes"/>
+        <!-- Tắt luật bắt ép chỉ có 1 lệnh return -->
+        <exclude name="OnlyOneReturn"/>
+        <!-- Tắt luật chê tên biến quá dài (Rất cần cho DTO) -->
+        <exclude name="LongVariable"/>
+        
+        <exclude name="LocalVariableCouldBeFinal"/>
+        <exclude name="MethodArgumentCouldBeFinal"/>
+        <exclude name="CommentDefaultAccessModifier"/>
+    </rule>
+    
+    <!-- Cấu hình lại bộ luật Error Prone -->
+    <rule ref="category/java/errorprone.xml">
+        <!-- Tắt luật bắt bẻ trùng lặp chuỗi ký tự (như "200", "500", "SUCCESS") -->
+        <exclude name="AvoidDuplicateLiterals"/>
+        <exclude name="LoggerIsNotStaticFinal"/>
+    </rule>
+</ruleset>
