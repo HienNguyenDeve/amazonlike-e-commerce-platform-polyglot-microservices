@@ -1,23 +1,21 @@
 package com.nguyenhien.auth_service.application.event.producer;
 
+import com.nguyenhien.auth_service.application.event.message.UserRegisteredEvent;
+import lombok.RequiredArgsConstructor;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
-
-import com.nguyenhien.auth_service.application.event.message.UserRegisteredEvent;
-
-import lombok.RequiredArgsConstructor;
 
 @Component
 @RequiredArgsConstructor
 public class AuthEventProducer {
-    private final KafkaTemplate<String, Object> kafkaTemplate;
+  private final KafkaTemplate<String, Object> kafkaTemplate;
 
-    public void publishUserRegistered(UserRegisteredEvent event) {
-        try {
-            kafkaTemplate.send("user.registered", event);
-            System.out.println("EVENT SEND");
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+  public void publishUserRegistered(UserRegisteredEvent event) {
+    try {
+      kafkaTemplate.send("user.registered", event);
+      System.out.println("EVENT SEND");
+    } catch (Exception e) {
+      e.printStackTrace();
     }
+  }
 }

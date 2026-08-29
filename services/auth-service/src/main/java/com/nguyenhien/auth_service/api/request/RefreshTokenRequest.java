@@ -7,9 +7,10 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Data
-@NoArgsConstructor@AllArgsConstructor
+@NoArgsConstructor
+@AllArgsConstructor
 @Builder
 public class RefreshTokenRequest {
-    @NotBlank(message="refresh token is required")
-    private String refreshToken;
+  @NotBlank(message = "refresh token is required")
+  private String refreshToken;
 }

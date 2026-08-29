@@ -19,6 +19,7 @@ import org.springframework.stereotype.Service;
 import com.nguyenhien.auth_service.application.interfaces.ITokenService;
 
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
@@ -26,86 +27,86 @@ import io.jsonwebtoken.security.Keys;
 @Service
 public class TokenService implements ITokenService {
 
-    @Value("${app.security.secretKey}")
-    private String secretKey;
+  @Value("${app.security.secretKey}")
+  private String secretKey;
 
-    @Value("${app.security.accessTokenExpiration}")
-    private Integer expireTime;
+  @Value("${app.security.accessTokenExpiration}")
+  private Integer expireTime;
 
-    @Override
-    public String generateToken(Authentication authentication) {
-        String roles = authentication.getAuthorities().stream().map(Object::toString).collect(Collectors.joining(","));
-        return generateAccessToken(authentication.getName(), roles);
+  @Override
+  public String generateToken(Authentication authentication) {
+    String roles =
+        authentication.getAuthorities().stream()
+            .map(Object::toString)
+            .collect(Collectors.joining(","));
+    return generateAccessToken(authentication.getName(), roles);
+  }
+
+  private String generateAccessToken(String name, String roles) {
+    LocalDateTime expiredAt = LocalDateTime.now().plusSeconds(expireTime); // Now + 3600s from
+    // application.properties => expiredAt =
+    // Now + 1h
+    SecretKey key =
+        Keys.hmacShaKeyFor(Decoders.BASE64.decode(secretKey)); // Decode secretKey from Base64 to
+    // SecretKey
+    Date expiriation =
+        Date.from(expiredAt.atZone(ZoneId.systemDefault()).toInstant()); // Convert LocalDateTime to
+    // Date
+    // Generate JWT token
+    return Jwts.builder()
+        .subject(name)
+        .claim("roles", roles)
+        .expiration(expiriation)
+        .signWith(key)
+        .compact();
+  }
+
+  @Override
+  public Authentication getAuthentication(String token) {
+    if (token == null) {
+      return null;
     }
 
-    private String generateAccessToken(String name, String roles) {
-        LocalDateTime expiredAt = LocalDateTime.now().plusSeconds(expireTime); // Now + 3600s from
-        // application.properties => expiredAt =
-        // Now + 1h
-        SecretKey key = Keys.hmacShaKeyFor(Decoders.BASE64.decode(secretKey)); // Decode secretKey from Base64 to
-        // SecretKey
-        Date expiriation = Date.from(expiredAt.atZone(ZoneId.systemDefault()).toInstant()); // Convert LocalDateTime to
-        // Date
-        // Generate JWT token
-        return Jwts.builder()
-                .subject(name)
-                .claim("roles", roles)
-                .expiration(expiriation)
-                .signWith(key)
-                .compact();
+    SecretKey key =
+        Keys.hmacShaKeyFor(Decoders.BASE64.decode(secretKey)); // Decode secretKey from Base64 to
+    // SecretKey
+    try {
+      Claims claims = Jwts.parser().verifyWith(key).build().parseSignedClaims(token).getPayload();
+
+      String roles = claims.get("roles").toString();
+
+      Set<GrantedAuthority> authorities =
+          Set.of(roles.split(",")).stream()
+              .map(SimpleGrantedAuthority::new)
+              .collect(Collectors.toSet());
+
+      User priciple = new User(claims.getSubject(), "", authorities);
+
+      return new UsernamePasswordAuthenticationToken(priciple, token, authorities);
+    } catch (JwtException e) {
+      return null;
     }
+  }
 
-    @Override
-    public Authentication getAuthentication(String token) {
-        if (token == null) {
-            return null;
-        }
+  @Override
+  public Long getRemainingExpiration(String token) {
+    try {
+      Claims claims =
+          Jwts.parser().verifyWith(getSigningKey()).build().parseSignedClaims(token).getPayload();
 
-        SecretKey key = Keys.hmacShaKeyFor(Decoders.BASE64.decode(secretKey)); // Decode secretKey from Base64 to
-                                                                               // SecretKey
-        try {
-            Claims claims = Jwts.parser()
-                    .verifyWith(key)
-                    .build()
-                    .parseSignedClaims(token)
-                    .getPayload();
+      Date expiration = claims.getExpiration();
 
-            String roles = claims.get("roles").toString();
+      long remainingMillis = expiration.getTime() - System.currentTimeMillis();
 
-            Set<GrantedAuthority> authorities = Set.of(roles.split(",")).stream()
-                    .map(SimpleGrantedAuthority::new).collect(Collectors.toSet());
+      return Math.max(remainingMillis / 1000, 0);
 
-            User priciple = new User(claims.getSubject(), "", authorities);
-
-            return new UsernamePasswordAuthenticationToken(priciple, token, authorities);
-        } catch (Exception e) {
-            return null;
-        }
+    } catch (IllegalArgumentException e) {
+      return 0L;
     }
+  }
 
-    @Override
-    public Long getRemainingExpiration(String token) {
-        try {
-            Claims claims = Jwts.parser()
-                    .verifyWith(getSigningKey())
-                    .build()
-                    .parseSignedClaims(token)
-                    .getPayload();
-
-            Date expiration = claims.getExpiration();
-
-            long remainingMillis = expiration.getTime() - System.currentTimeMillis();
-
-            return Math.max(remainingMillis / 1000, 0);
-
-        } catch (Exception e) {
-            return 0L;
-        }
-    }
-
-    private SecretKey getSigningKey() {
-        byte[] keyBytes = Decoders.BASE64.decode(secretKey);
-        return Keys.hmacShaKeyFor(keyBytes);
-    }
-
+  private SecretKey getSigningKey() {
+    byte[] keyBytes = Decoders.BASE64.decode(secretKey);
+    return Keys.hmacShaKeyFor(keyBytes);
+  }
 }

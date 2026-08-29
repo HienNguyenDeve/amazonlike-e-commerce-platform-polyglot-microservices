@@ -1,7 +1,6 @@
 package com.nguyenhien.auth_service.api.request;
 
 import java.util.UUID;
-
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -12,7 +11,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Builder
 public class CreateRefreshTokenRequest {
-    private UUID userId;
-    private String username;
-    private String role;
+  private UUID userId;
+  private String username;
+  private String role;
 }
