@@ -1,10 +1,8 @@
 package com.nguyenhien.user_service.domain.models;
 
+import com.nguyenhien.user_service.infrastructure.persistences.entity.UserProfileEntity;
 import java.time.Instant;
 import java.util.UUID;
-
-import com.nguyenhien.user_service.infrastructure.persistences.entity.UserProfileEntity;
-
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -15,21 +13,21 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Builder
 public class Preference {
-    private UUID id;
+  private UUID id;
 
-    private UserProfileEntity userProfile;
+  private UserProfileEntity userProfile;
 
-    private String language;
+  private String language;
 
-    private String currency;
+  private String currency;
 
-    private boolean emailNotification;
+  private boolean emailNotification;
 
-    private boolean smsNotification;
+  private boolean smsNotification;
 
-    private boolean pushNotification;
+  private boolean pushNotification;
 
-    private Instant createdAt;
+  private Instant createdAt;
 
-    private Instant updatedAt;
+  private Instant updatedAt;
 }

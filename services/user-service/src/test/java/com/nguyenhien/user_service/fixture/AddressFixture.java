@@ -5,37 +5,20 @@ import com.nguyenhien.user_service.infrastructure.persistences.entity.AddressEnt
 import com.nguyenhien.user_service.infrastructure.persistences.entity.UserProfileEntity;
 
 public final class AddressFixture {
-    private AddressFixture() {
-    }
+  private AddressFixture() {}
 
-    public static AddressEntity defaultAddress(
-            UserProfileEntity user) {
+  public static AddressEntity defaultAddress(UserProfileEntity user) {
 
-        return AddressBuilder.anAddress()
-                .user(user)
-                .defaultAddress()
-                .build();
+    return AddressBuilder.anAddress().user(user).defaultAddress().build();
+  }
 
-    }
+  public static AddressEntity homeAddress(UserProfileEntity user) {
 
-    public static AddressEntity homeAddress(
-            UserProfileEntity user) {
+    return AddressBuilder.anAddress().user(user).home().build();
+  }
 
-        return AddressBuilder.anAddress()
-                .user(user)
-                .home()
-                .build();
+  public static AddressEntity officeAddress(UserProfileEntity user) {
 
-    }
-
-    public static AddressEntity officeAddress(
-            UserProfileEntity user) {
-
-        return AddressBuilder.anAddress()
-                .user(user)
-                .office()
-                .notDefault()
-                .build();
-
-    }
+    return AddressBuilder.anAddress().user(user).office().notDefault().build();
+  }
 }

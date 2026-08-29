@@ -17,75 +17,70 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class UserProfile {
-    private UUID id;
+  private UUID id;
 
-    private UUID authUserId;
+  private UUID authUserId;
 
-    private String email;
+  private String email;
 
-    private String fullName;
+  private String fullName;
 
-    private String phone;
+  private String phone;
 
-    private Gender gender;
+  private Gender gender;
 
-    private LocalDate birthday;
+  private LocalDate birthday;
 
-    private String avatarUrl;
+  private String avatarUrl;
 
-    private UserStatus status;
+  private UserStatus status;
 
-    private boolean profileCompleted;
+  private boolean profileCompleted;
 
-    private Long loyaltyPoint;
+  private Long loyaltyPoint;
 
-    private List<Address> addresses = new ArrayList<>();
+  private List<Address> addresses = new ArrayList<>();
 
-    private Preference preference;
+  private Preference preference;
 
-    private Instant createdAt;
+  private Instant createdAt;
 
-    private Instant updatedAt;
+  private Instant updatedAt;
 
-    public static UserProfile create(UUID authUserId, String email) {
+  public static UserProfile create(UUID authUserId, String email) {
 
-        UserProfile profile = new UserProfile();
+    UserProfile profile = new UserProfile();
 
-        profile.authUserId = authUserId;
-        profile.email = email;
-        profile.status = UserStatus.ACTIVE;
-        profile.profileCompleted = false;
-        profile.loyaltyPoint = 0L;
+    profile.authUserId = authUserId;
+    profile.email = email;
+    profile.status = UserStatus.ACTIVE;
+    profile.profileCompleted = false;
+    profile.loyaltyPoint = 0L;
 
-        return profile;
-    }
+    return profile;
+  }
 
-    public void updateProfile(
-            String fullName,
-            String phone,
-            Gender gender,
-            LocalDate birthday,
-            String avatarUrl) {
+  public void updateProfile(
+      String fullName, String phone, Gender gender, LocalDate birthday, String avatarUrl) {
 
-        this.fullName = fullName;
-        this.phone = phone;
-        this.gender = gender;
-        this.birthday = birthday;
-        this.avatarUrl = avatarUrl;
+    this.fullName = fullName;
+    this.phone = phone;
+    this.gender = gender;
+    this.birthday = birthday;
+    this.avatarUrl = avatarUrl;
 
-        this.profileCompleted = fullName != null
-                && phone != null;
-    }
+    this.profileCompleted = fullName != null && phone != null;
+  }
 
-    public void addAddress(Address address) {
-        this.addresses.add(address);
-    }
+  public void addAddress(Address address) {
+    this.addresses.add(address);
+  }
 
-    public void updatePreference(Preference preference) {
-        this.preference = preference;
-    }
+  public void updatePreference(Preference preference) {
+    this.preference = (preference != null) ? preference : null;
+  }
 
-    public void ban() {
-        this.status = UserStatus.BANNED;
-    }
+  public void ban() {
+    this.status = UserStatus.BANNED;
+  }
 }

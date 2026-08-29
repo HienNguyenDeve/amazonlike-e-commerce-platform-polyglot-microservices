@@ -5,37 +5,20 @@ import com.nguyenhien.user_service.infrastructure.persistences.entity.Preference
 import com.nguyenhien.user_service.infrastructure.persistences.entity.UserProfileEntity;
 
 public final class PreferenceFixture {
-    private PreferenceFixture() {
-    }
+  private PreferenceFixture() {}
 
-    public static PreferenceEntity defaultPreference(
-            UserProfileEntity user) {
+  public static PreferenceEntity defaultPreference(UserProfileEntity user) {
 
-        return PreferenceBuilder.preference()
-                .user(user)
-                .build();
+    return PreferenceBuilder.preference().user(user).build();
+  }
 
-    }
+  public static PreferenceEntity vietnamese(UserProfileEntity user) {
 
-    public static PreferenceEntity vietnamese(
-            UserProfileEntity user) {
+    return PreferenceBuilder.preference().user(user).language("vi").currency("VND").build();
+  }
 
-        return PreferenceBuilder.preference()
-                .user(user)
-                .language("vi")
-                .currency("VND")
-                .build();
+  public static PreferenceEntity english(UserProfileEntity user) {
 
-    }
-
-    public static PreferenceEntity english(
-            UserProfileEntity user) {
-
-        return PreferenceBuilder.preference()
-                .user(user)
-                .language("en")
-                .currency("USD")
-                .build();
-
-    }
+    return PreferenceBuilder.preference().user(user).language("en").currency("USD").build();
+  }
 }
