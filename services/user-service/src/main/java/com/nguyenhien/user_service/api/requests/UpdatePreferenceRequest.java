@@ -16,35 +16,20 @@ import lombok.Setter;
 @Schema(description = "Update user preferences request")
 public class UpdatePreferenceRequest {
 
-    @Schema(
-            description = "Language code",
-            example = "vi"
-    )
-    @NotBlank
-    private String language;
+  @Schema(description = "Language code", example = "vi")
+  @NotBlank
+  private String language;
 
-    @Schema(
-            description = "Currency code",
-            example = "VND"
-    )
-    @NotBlank
-    private String currency;
+  @Schema(description = "Currency code", example = "VND")
+  @NotBlank
+  private String currency;
 
-    @Schema(
-            description = "Enable email notifications",
-            example = "true"
-    )
-    private boolean emailNotification;
+  @Schema(description = "Enable email notifications", example = "true")
+  private boolean emailNotification;
 
-    @Schema(
-            description = "Enable SMS notifications",
-            example = "false"
-    )
-    private boolean smsNotification;
+  @Schema(description = "Enable SMS notifications", example = "false")
+  private boolean smsNotification;
 
-    @Schema(
-            description = "Enable push notifications",
-            example = "true"
-    )
-    private boolean pushNotification;
+  @Schema(description = "Enable push notifications", example = "true")
+  private boolean pushNotification;
 }

@@ -7,9 +7,9 @@ import org.mapstruct.ReportingPolicy;
 import com.nguyenhien.user_service.domain.models.UserProfile;
 import com.nguyenhien.user_service.infrastructure.persistences.entity.UserProfileEntity;
 
-@Mapper(componentModel= MappingConstants.ComponentModel.SPRING, unmappedTargetPolicy= ReportingPolicy.IGNORE)
+@Mapper(componentModel = MappingConstants.ComponentModel.SPRING, unmappedTargetPolicy = ReportingPolicy.WARN)
 public interface IUserProfileEntityMapper {
-    UserProfileEntity toEntity(UserProfile model);
+  UserProfileEntity toEntity(UserProfile model);
 
-    UserProfile toModel(UserProfileEntity entity);
+  UserProfile toModel(UserProfileEntity entity);
 }

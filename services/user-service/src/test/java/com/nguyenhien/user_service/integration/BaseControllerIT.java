@@ -1,7 +1,6 @@
 package com.nguyenhien.user_service.integration;
 
 import java.util.Map;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
@@ -12,155 +11,113 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
 @AutoConfigureMockMvc
 public abstract class BaseControllerIT extends BaseIntegrationTest {
-    @Autowired
-    protected MockMvc mockMvc;
+  @Autowired protected MockMvc mockMvc;
 
-    /*
-     * =========================
-     * GET
-     * =========================
-     */
+  /*
+   * =========================
+   * GET
+   * =========================
+   */
 
-    protected ResultActions get(String url)
-            throws Exception {
+  protected ResultActions get(String url) throws Exception {
 
-        return mockMvc.perform(
-                MockMvcRequestBuilders.get(url));
-    }
+    return mockMvc.perform(MockMvcRequestBuilders.get(url));
+  }
 
-    protected ResultActions get(
-            String url,
-            Map<String, String> headers)
-            throws Exception {
+  protected ResultActions get(String url, Map<String, String> headers) throws Exception {
 
-        MockHttpServletRequestBuilder request = MockMvcRequestBuilders.get(url);
+    MockHttpServletRequestBuilder request = MockMvcRequestBuilders.get(url);
 
-        headers.forEach(request::header);
+    headers.forEach(request::header);
 
-        return mockMvc.perform(request);
-    }
+    return mockMvc.perform(request);
+  }
 
-    /*
-     * =========================
-     * POST
-     * =========================
-     */
+  /*
+   * =========================
+   * POST
+   * =========================
+   */
 
-    protected ResultActions post(
-            String url,
-            Object body)
-            throws Exception {
+  protected ResultActions post(String url, Object body) throws Exception {
 
-        return mockMvc.perform(
+    return mockMvc.perform(
+        MockMvcRequestBuilders.post(url)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(toJson(body)));
+  }
 
-                MockMvcRequestBuilders.post(url)
+  protected ResultActions post(String url, Object body, Map<String, String> headers)
+      throws Exception {
 
-                        .contentType(MediaType.APPLICATION_JSON)
+    MockHttpServletRequestBuilder request =
+        MockMvcRequestBuilders.post(url)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(toJson(body));
 
-                        .content(toJson(body)));
-    }
+    headers.forEach(request::header);
 
-    protected ResultActions post(
-            String url,
-            Object body,
-            Map<String, String> headers)
-            throws Exception {
+    return mockMvc.perform(request);
+  }
 
-        MockHttpServletRequestBuilder request =
+  /*
+   * =========================
+   * PUT
+   * =========================
+   */
 
-                MockMvcRequestBuilders.post(url)
+  protected ResultActions put(String url, Object body) throws Exception {
 
-                        .contentType(MediaType.APPLICATION_JSON)
+    return mockMvc.perform(
+        MockMvcRequestBuilders.put(url)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(toJson(body)));
+  }
 
-                        .content(toJson(body));
+  protected ResultActions put(String url, Object body, Map<String, String> headers)
+      throws Exception {
 
-        headers.forEach(request::header);
+    MockHttpServletRequestBuilder request =
+        MockMvcRequestBuilders.put(url)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(toJson(body));
 
-        return mockMvc.perform(request);
-    }
+    headers.forEach(request::header);
 
-    /*
-     * =========================
-     * PUT
-     * =========================
-     */
+    return mockMvc.perform(request);
+  }
 
-    protected ResultActions put(
-            String url,
-            Object body)
-            throws Exception {
+  /*
+   * =========================
+   * PATCH
+   * =========================
+   */
 
-        return mockMvc.perform(
+  protected ResultActions patch(String url, Object body) throws Exception {
 
-                MockMvcRequestBuilders.put(url)
+    return mockMvc.perform(
+        MockMvcRequestBuilders.patch(url)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(toJson(body)));
+  }
 
-                        .contentType(MediaType.APPLICATION_JSON)
+  /*
+   * =========================
+   * DELETE
+   * =========================
+   */
 
-                        .content(toJson(body)));
-    }
+  protected ResultActions delete(String url) throws Exception {
 
-    protected ResultActions put(
-            String url,
-            Object body,
-            Map<String, String> headers)
-            throws Exception {
+    return mockMvc.perform(MockMvcRequestBuilders.delete(url));
+  }
 
-        MockHttpServletRequestBuilder request =
+  protected ResultActions delete(String url, Map<String, String> headers) throws Exception {
 
-                MockMvcRequestBuilders.put(url)
+    MockHttpServletRequestBuilder request = MockMvcRequestBuilders.delete(url);
 
-                        .contentType(MediaType.APPLICATION_JSON)
+    headers.forEach(request::header);
 
-                        .content(toJson(body));
-
-        headers.forEach(request::header);
-
-        return mockMvc.perform(request);
-    }
-
-    /*
-     * =========================
-     * PATCH
-     * =========================
-     */
-
-    protected ResultActions patch(
-            String url,
-            Object body)
-            throws Exception {
-
-        return mockMvc.perform(
-
-                MockMvcRequestBuilders.patch(url)
-
-                        .contentType(MediaType.APPLICATION_JSON)
-
-                        .content(toJson(body)));
-    }
-
-    /*
-     * =========================
-     * DELETE
-     * =========================
-     */
-
-    protected ResultActions delete(String url)
-            throws Exception {
-
-        return mockMvc.perform(
-                MockMvcRequestBuilders.delete(url));
-    }
-
-    protected ResultActions delete(
-            String url,
-            Map<String, String> headers)
-            throws Exception {
-
-        MockHttpServletRequestBuilder request = MockMvcRequestBuilders.delete(url);
-
-        headers.forEach(request::header);
-
-        return mockMvc.perform(request);
-    }
-
+    return mockMvc.perform(request);
+  }
 }

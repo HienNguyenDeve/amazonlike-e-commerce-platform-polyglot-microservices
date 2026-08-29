@@ -8,14 +8,11 @@ import org.springframework.security.web.SecurityFilterChain;
 
 @TestConfiguration
 public class TestSecurityConfig {
-    @Bean
-    SecurityFilterChain security(HttpSecurity http) throws Exception {
-        http
-                .csrf(csrf -> csrf.disable())
-                .authorizeHttpRequests(auth -> auth
-                        .anyRequest()
-                        .permitAll())
-                .httpBasic(Customizer.withDefaults());
-        return http.build();
-    }
+  @Bean
+  SecurityFilterChain security(HttpSecurity http) throws Exception {
+    http.csrf(csrf -> csrf.disable())
+        .authorizeHttpRequests(auth -> auth.anyRequest().permitAll())
+        .httpBasic(Customizer.withDefaults());
+    return http.build();
+  }
 }

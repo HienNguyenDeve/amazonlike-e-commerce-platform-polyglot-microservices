@@ -4,38 +4,31 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 public final class JsonUtils {
-    private static final ObjectMapper MAPPER = new ObjectMapper();
+  private static final ObjectMapper MAPPER = new ObjectMapper();
 
-    private JsonUtils() {
+  private JsonUtils() {}
+
+  public static String toJson(Object object) {
+
+    try {
+
+      return MAPPER.writeValueAsString(object);
+
+    } catch (JsonProcessingException ex) {
+
+      throw new RuntimeException(ex);
     }
+  }
 
-    public static String toJson(Object object) {
+  public static <T> T fromJson(String json, Class<T> clazz) {
 
-        try {
+    try {
 
-            return MAPPER.writeValueAsString(object);
+      return MAPPER.readValue(json, clazz);
 
-        } catch (JsonProcessingException ex) {
+    } catch (Exception ex) {
 
-            throw new RuntimeException(ex);
-
-        }
-
+      throw new RuntimeException(ex);
     }
-
-    public static <T> T fromJson(
-            String json,
-            Class<T> clazz) {
-
-        try {
-
-            return MAPPER.readValue(json, clazz);
-
-        } catch (Exception ex) {
-
-            throw new RuntimeException(ex);
-
-        }
-
-    }
+  }
 }

@@ -1,8 +1,7 @@
 package com.nguyenhien.user_service.api.responses;
 
-import java.util.UUID;
-
 import io.swagger.v3.oas.annotations.media.Schema;
+import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -17,15 +16,15 @@ import lombok.Setter;
 @Schema(description = "User preferences response")
 public class PreferenceResponse {
 
-    private UUID id;
+  private UUID id;
 
-    private String language;
+  private String language;
 
-    private String currency;
+  private String currency;
 
-    private boolean emailNotification;
+  private boolean emailNotification;
 
-    private boolean smsNotification;
+  private boolean smsNotification;
 
-    private boolean pushNotification;
+  private boolean pushNotification;
 }

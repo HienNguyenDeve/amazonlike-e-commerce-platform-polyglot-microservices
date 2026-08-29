@@ -7,9 +7,12 @@ import org.mapstruct.ReportingPolicy;
 import com.nguyenhien.user_service.domain.models.Preference;
 import com.nguyenhien.user_service.infrastructure.persistences.entity.PreferenceEntity;
 
-@Mapper(componentModel = MappingConstants.ComponentModel.SPRING, uses = IUserProfileEntityMapper.class, unmappedTargetPolicy = ReportingPolicy.IGNORE)
+@Mapper(
+    componentModel = MappingConstants.ComponentModel.SPRING,
+    uses = IUserProfileEntityMapper.class,
+    unmappedTargetPolicy = ReportingPolicy.WARN)
 public interface IPreferenceEntityMapper {
-    PreferenceEntity toEntity(Preference model);
+  PreferenceEntity toEntity(Preference model);
 
-    Preference toModel(PreferenceEntity entity);
+  Preference toModel(PreferenceEntity entity);
 }

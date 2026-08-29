@@ -1,11 +1,5 @@
 package com.nguyenhien.user_service.application.services;
 
-import java.time.Instant;
-import java.util.UUID;
-
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import com.nguyenhien.user_service.api.requests.UpdateUserProfileRequest;
 import com.nguyenhien.user_service.api.responses.UserProfileResponse;
 import com.nguyenhien.user_service.application.events.message.UserProfileCreatedEvent;
@@ -18,62 +12,70 @@ import com.nguyenhien.user_service.domain.repositories.IUserProfileRepository;
 
 import lombok.RequiredArgsConstructor;
 
+import java.time.Instant;
+import java.util.UUID;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 @Service
-@RequiredArgsConstructor
 @Transactional
+@RequiredArgsConstructor
 public class UserProfileService implements IUserProfileService {
 
-        private final IUserProfileRepository userProfileRepository;
-        private final IUserProfileMapper dtoMapper;
-        private final UserProfileCreatedProducer userProfileCreatedProducer;
+  private final IUserProfileRepository userProfileRepository;
+  private final IUserProfileMapper dtoMapper;
+  private final UserProfileCreatedProducer userProfileCreatedProducer;
 
-        @Override
-        public UserProfileResponse getUserProfile(UUID userProfileId) {
-                UserProfile profile = userProfileRepository.findById(userProfileId)
-                        .orElseThrow(() -> new UserProfileNotFoundException(userProfileId));
+  @Override
+  public UserProfileResponse getUserProfile(UUID userProfileId) {
+    UserProfile profile =
+        userProfileRepository
+            .findById(userProfileId)
+            .orElseThrow(() -> new UserProfileNotFoundException(userProfileId));
 
-                return dtoMapper.toResponse(profile);
+    return dtoMapper.toResponse(profile);
+  }
 
-        }
+  @Override
+  public UserProfileResponse updateUserProfile(
+      UUID userProfileId, UpdateUserProfileRequest request) {
+    UserProfile profile =
+        userProfileRepository
+            .findById(userProfileId)
+            .orElseThrow(() -> new UserProfileNotFoundException(userProfileId));
 
-        @Override
-        public UserProfileResponse updateUserProfile(UUID userProfileId, 
-                                        UpdateUserProfileRequest request) {
-                UserProfile profile = userProfileRepository.findById(userProfileId)
-                        .orElseThrow(() -> new UserProfileNotFoundException(userProfileId));
+    profile.updateProfile(
+        request.fullName(),
+        request.phone(),
+        request.gender(),
+        request.birthday(),
+        request.avatarUrl());
 
-                profile.updateProfile(
-                                request.fullName(),
-                                request.phone(),
-                                request.gender(),
-                                request.birthday(),
-                                request.avatarUrl());
+    UserProfile updated = userProfileRepository.save(profile);
 
-                UserProfile updated = userProfileRepository.save(profile);
+    return dtoMapper.toResponse(updated);
+  }
 
-                return dtoMapper.toResponse(updated);
-        }
+  @Override
+  public UserProfileResponse createProfile(UUID authUserId, String email) {
+    if (userProfileRepository.existsByAuthUserId(authUserId)) {
+      throw new IllegalStateException("Profile already exists");
+    }
 
-        @Override
-        public UserProfileResponse createProfile(UUID authUserId, String email) {
-                if (userProfileRepository.existsByAuthUserId(authUserId)) {
-                        throw new IllegalStateException("Profile already exists");
-                }
+    UserProfile profile = UserProfile.create(authUserId, email);
 
-                UserProfile profile = UserProfile.create(authUserId, email);
+    UserProfile saved = userProfileRepository.save(profile);
 
-                UserProfile saved = userProfileRepository.save(profile);
+    UserProfileCreatedEvent event =
+        new UserProfileCreatedEvent(
+            UUID.randomUUID(),
+            saved.getId(),
+            saved.getAuthUserId(),
+            saved.getEmail(),
+            Instant.now());
 
-                UserProfileCreatedEvent event = new UserProfileCreatedEvent(
-                                UUID.randomUUID(),
-                                saved.getId(),
-                                saved.getAuthUserId(),
-                                saved.getEmail(),
-                                Instant.now());
+    userProfileCreatedProducer.publishUserProfileCreated(event);
 
-                userProfileCreatedProducer.publishUserProfileCreated(event);
-
-                return dtoMapper.toResponse(saved);
-        }
-
+    return dtoMapper.toResponse(saved);
+  }
 }
