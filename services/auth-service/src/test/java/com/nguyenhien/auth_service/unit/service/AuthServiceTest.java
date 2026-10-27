@@ -1,13 +1,14 @@
 package com.nguyenhien.auth_service.unit.service;
 
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.nguyenhien.auth_service.api.request.CreateRefreshTokenRequest;
@@ -17,6 +18,8 @@ import com.nguyenhien.auth_service.api.request.RefreshTokenRequest;
 import com.nguyenhien.auth_service.api.request.RegisterRequest;
 import com.nguyenhien.auth_service.api.response.JwtResponse;
 import com.nguyenhien.auth_service.api.response.MessageResponse;
+import com.nguyenhien.auth_service.application.event.message.UserRegisteredEvent;
+import com.nguyenhien.auth_service.application.event.producer.AuthEventProducer;
 import com.nguyenhien.auth_service.application.interfaces.IBlacklistedAccessTokenService;
 import com.nguyenhien.auth_service.application.interfaces.IRefreshTokenService;
 import com.nguyenhien.auth_service.application.interfaces.ITokenService;
@@ -27,10 +30,14 @@ import com.nguyenhien.auth_service.domain.repository.IRefreshTokenRepository;
 import com.nguyenhien.auth_service.infrastructure.persistence.entity.UserEntity;
 import com.nguyenhien.auth_service.infrastructure.persistence.repository.JpaUserRepository;
 import com.nguyenhien.auth_service.infrastructure.security.UserDetailsImpl;
+import com.nguyenhien.shared.exception.base.BusinessException;
+import com.nguyenhien.shared.exception.model.ErrorCode;
 import java.util.Optional;
 import java.util.UUID;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -38,6 +45,7 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 @ExtendWith(MockitoExtension.class)
@@ -59,6 +67,13 @@ public class AuthServiceTest {
 
   @Mock private IBlacklistedAccessTokenService blacklistedAccessTokenService;
 
+  @Mock private AuthEventProducer authEventProducer;
+
+  @AfterEach
+  void clearSecurityContext() {
+    SecurityContextHolder.clearContext();
+  }
+
   // Inject Mocks
   @InjectMocks private AuthService authService;
 
@@ -77,7 +92,16 @@ public class AuthServiceTest {
             .build();
 
     when(userRepository.existsByUsername("NguyenHien")).thenReturn(false);
-    when(userRepository.existsByEmail("c")).thenReturn(false);
+    when(userRepository.existsByEmail("hiennv@gmail.com")).thenReturn(false);
+    when(passwordEncoder.encode(request.getPassword())).thenReturn("encoded-password");
+    UUID userId = UUID.randomUUID();
+    when(userRepository.save(any(UserEntity.class)))
+        .thenAnswer(
+            invocation -> {
+              UserEntity user = invocation.getArgument(0);
+              user.setId(userId);
+              return user;
+            });
 
     // Act
     MessageResponse result = authService.register(request);
@@ -85,11 +109,28 @@ public class AuthServiceTest {
     // Assert
     assertNotNull(result);
 
+    assertTrue(result.isSuccess());
+    assertEquals("Regisgter Successfully", result.getMessage());
+    ArgumentCaptor<UserEntity> userCaptor = ArgumentCaptor.forClass(UserEntity.class);
+    verify(userRepository).save(userCaptor.capture());
+    assertEquals(request.getUsername(), userCaptor.getValue().getUsername());
+    assertEquals(request.getEmail(), userCaptor.getValue().getEmail());
+    assertEquals("encoded-password", userCaptor.getValue().getPasswordHash());
+    verify(passwordEncoder).encode(request.getPassword());
+    ArgumentCaptor<UserRegisteredEvent> eventCaptor =
+        ArgumentCaptor.forClass(UserRegisteredEvent.class);
+    verify(authEventProducer).publishUserRegistered(eventCaptor.capture());
+    assertEquals(userId, eventCaptor.getValue().authUserId());
+    assertEquals(request.getEmail(), eventCaptor.getValue().email());
+    assertNotNull(eventCaptor.getValue().eventId());
+    assertNotNull(eventCaptor.getValue().occurredAt());
+
     verify(userRepository).existsByUsername("NguyenHien");
     verify(userRepository).existsByEmail("hiennv@gmail.com");
   }
 
   // Register failure when username is exist
+  @Test
   void register_shouldThrowException_WhenUsernameAlreadyExist() {
     // Arrange
     RegisterRequest request =
@@ -102,12 +143,15 @@ public class AuthServiceTest {
     when(userRepository.existsByUsername("NguyenHien")).thenReturn(true);
 
     // Act
-    RuntimeException ex = assertThrows(RuntimeException.class, () -> authService.register(request));
+    BusinessException ex =
+        assertThrows(BusinessException.class, () -> authService.register(request));
 
     // Assert
-    assertEquals("Username already exists", ex.getMessage());
+    assertEquals(ErrorCode.RESOURCE_ALREADY_EXISTS, ex.getErrorCode());
+    verify(userRepository, never()).existsByEmail(anyString());
 
     verify(userRepository, never()).save(any(UserEntity.class));
+    verifyNoInteractions(passwordEncoder, authEventProducer);
   }
 
   // Register failure when email is exist
@@ -125,12 +169,14 @@ public class AuthServiceTest {
     when(userRepository.existsByEmail("john@gmail.com")).thenReturn(true);
 
     // Act
-    RuntimeException ex = assertThrows(RuntimeException.class, () -> authService.register(request));
+    BusinessException ex =
+        assertThrows(BusinessException.class, () -> authService.register(request));
 
     // Assert
-    assertEquals("Email already exists", ex.getMessage());
+    assertEquals(ErrorCode.RESOURCE_ALREADY_EXISTS, ex.getErrorCode());
 
     verify(userRepository, never()).save(any(UserEntity.class));
+    verifyNoInteractions(passwordEncoder, authEventProducer);
   }
 
   // Login succefully
@@ -198,7 +244,7 @@ public class AuthServiceTest {
             .token("old-refresh-token")
             .userId(userId)
             .username("john")
-            .role("ROLE_USER")
+            .role("USER")
             .expiration(2592000L)
             .build();
 
@@ -207,7 +253,7 @@ public class AuthServiceTest {
             .token("new-refresh-token")
             .userId(userId)
             .username("john")
-            .role("ROLE_USER")
+            .role("USER")
             .expiration(2592000L)
             .build();
 
@@ -260,6 +306,7 @@ public class AuthServiceTest {
   void revokeToken_shouldDeleteRefreshTokenAndReturnSuccessMessage() {
     // Arrange
     String token = "refresh-token";
+    when(refreshTokenService.delete(token)).thenReturn(true);
 
     // Act
     MessageResponse result = authService.revokeToken(token, "logout");
