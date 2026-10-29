@@ -26,5 +26,25 @@ jobs:
           java-version: '21'
           cache: maven
 
+      - name: Bootstrap Maven Wrapper
+        shell: bash
+        timeout-minutes: 5
+        env:
+          MVNW_VERBOSE: 'true'
+        run: |
+          # Retry bootstrap only; never retry or hide verification failures.
+          for attempt in 1 2 3; do
+            if timeout 90s ./mvnw --version; then
+              exit 0
+            else
+              status=$?
+            fi
+            if [ "$attempt" -eq 3 ]; then
+              exit "$status"
+            fi
+            echo "::warning::Maven Wrapper bootstrap attempt $attempt failed (exit $status); retrying in 5 seconds"
+            sleep 5
+          done
+
       - name: Verify
         run: ./mvnw clean verify
