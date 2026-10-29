@@ -1,0 +1,155 @@
+# Isolated, disposable test stack. Run via smoke-test.py; never attach development volumes.
+services:
+  auth-db:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: auth_smoke
+      POSTGRES_USER: smoke
+      POSTGRES_PASSWORD: smoke-only-password
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -U smoke -d auth_smoke']
+      interval: 2s
+      timeout: 5s
+      retries: 30
+  user-db:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: user_smoke
+      POSTGRES_USER: smoke
+      POSTGRES_PASSWORD: smoke-only-password
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -U smoke -d user_smoke']
+      interval: 2s
+      timeout: 5s
+      retries: 30
+  redis:
+    image: redis:7
+    command: [redis-server, --save, '', --appendonly, 'no']
+    tmpfs:
+      - /data
+    healthcheck:
+      test: [CMD, redis-cli, ping]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+  kafka:
+    image: apache/kafka:4.1.1
+    # Override every image-declared VOLUME: keep smoke data in memory,
+    # not anonymous Docker volumes left behind by compose down.
+    tmpfs:
+      - /etc/kafka/secrets:mode=1777
+      - /mnt/shared/config:mode=1777
+      - /var/lib/kafka/data:mode=1777
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+    healthcheck:
+      test: [CMD-SHELL, '/opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --list >/dev/null']
+      interval: 5s
+      timeout: 10s
+      retries: 30
+  auth-service:
+    image: amazonlike/auth-service:phase0
+    healthcheck:
+      interval: 5s
+      timeout: 5s
+      start_period: 30s
+      retries: 12
+    build:
+      context: ../..
+      dockerfile: services/auth-service/Dockerfile
+    environment:
+      SPRING_CONFIG_LOCATION: file:/config/application-test.properties
+      SERVER_PORT: 8085
+      SPRING_DATASOURCE_URL: jdbc:postgresql://auth-db:5432/auth_smoke
+      SPRING_DATASOURCE_USERNAME: smoke
+      SPRING_DATASOURCE_PASSWORD: smoke-only-password
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      APP_SECURITY_SECRETKEY: ${SMOKE_SIGNING_KEY:?Run smoke-test.py}
+      HEALTHCHECK_AUTHORIZATION: ${SMOKE_AUTHORIZATION:?Run smoke-test.py}
+    volumes:
+      - ../../services/auth-service/src/test/resources/application-test.properties:/config/application-test.properties:ro
+    ports:
+      - '127.0.0.1::8085'
+    depends_on:
+      auth-db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+  user-service:
+    image: amazonlike/user-service:phase0
+    healthcheck:
+      interval: 5s
+      timeout: 5s
+      start_period: 30s
+      retries: 12
+    build:
+      context: ../..
+      dockerfile: services/user-service/Dockerfile
+    environment:
+      SPRING_CONFIG_LOCATION: file:/config/application-test.properties
+      SERVER_PORT: 8082
+      SPRING_DATASOURCE_URL: jdbc:postgresql://user-db:5432/user_smoke
+      SPRING_DATASOURCE_USERNAME: smoke
+      SPRING_DATASOURCE_PASSWORD: smoke-only-password
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_SECURITY_USER_NAME: smoke-user
+      SPRING_SECURITY_USER_PASSWORD: smoke-only-password
+      HEALTHCHECK_AUTHORIZATION: Basic c21va2UtdXNlcjpzbW9rZS1vbmx5LXBhc3N3b3Jk
+    volumes:
+      - ../../services/user-service/src/test/resources/application-test.properties:/config/application-test.properties:ro
+    ports:
+      - '127.0.0.1::8082'
+    depends_on:
+      user-db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+  api-gateway:
+    image: amazonlike/api-gateway:phase0
+    healthcheck:
+      interval: 5s
+      timeout: 5s
+      start_period: 30s
+      retries: 12
+    build:
+      context: ../..
+      dockerfile: services/api-gateway/Dockerfile
+    environment:
+      SPRING_CONFIG_LOCATION: file:/config/application-test.properties
+      SERVER_PORT: 8080
+      JWT_SECRETKEY: ${SMOKE_SIGNING_KEY:?Run smoke-test.py}
+    command:
+      - --spring.cloud.gateway.server.webflux.routes[0].id=auth-service
+      - --spring.cloud.gateway.server.webflux.routes[0].uri=http://auth-service:8085
+      - --spring.cloud.gateway.server.webflux.routes[0].predicates[0]=Path=/api/v1/auth/**
+      - --spring.cloud.gateway.server.webflux.routes[1].id=user-service
+      - --spring.cloud.gateway.server.webflux.routes[1].uri=http://user-service:8082
+      - --spring.cloud.gateway.server.webflux.routes[1].predicates[0]=Path=/api/v1/users/**
+    volumes:
+      - ../../services/api-gateway/src/test/resources/application-test.properties:/config/application-test.properties:ro
+    ports:
+      - '127.0.0.1::8080'
+    depends_on:
+      auth-service:
+        condition: service_healthy
+      user-service:
+        condition: service_healthy

@@ -1,35 +1,33 @@
-# ---------- Build Stage ----------
+# Build with the repository root as context:
+# docker build -f services/auth-service/Dockerfile -t amazonlike/auth-service:phase0 .
 FROM maven:3.9.11-eclipse-temurin-21 AS builder
-
 WORKDIR /workspace
 
-COPY pom.xml .
-COPY src ./src
+COPY pom.xml mvnw ./
+COPY .mvn/wrapper/maven-wrapper.properties .mvn/wrapper/maven-wrapper.properties
+# Maven must read every reactor POM, even when selecting one service with -pl.
+COPY services/auth-service/pom.xml services/auth-service/pom.xml
+COPY services/user-service/pom.xml services/user-service/pom.xml
+COPY services/api-gateway/pom.xml services/api-gateway/pom.xml
+COPY shared/shared-common/pom.xml shared/shared-common/pom.xml
+COPY services/auth-service/src/main services/auth-service/src/main
+COPY shared/shared-common/src/main shared/shared-common/src/main
 
-RUN mvn clean package -DskipTests
+# Tests run separately with Docker/Testcontainers; image packaging needs no Docker socket.
+RUN --mount=type=cache,id=amazonlike-maven,target=/root/.m2,sharing=locked \
+    chmod +x mvnw && ./mvnw -B -ntp -pl services/auth-service -am -DskipTests package
 
-# ---------- Runtime Stage ----------
 FROM eclipse-temurin:21-jre
-
-RUN groupadd spring && useradd -g spring spring
-
+RUN apt-get update && apt-get install -y --no-install-recommends curl \
+    && rm -rf /var/lib/apt/lists/* \
+    && groupadd spring && useradd -g spring spring
 WORKDIR /app
-
-COPY --from=builder /workspace/target/*.jar app.jar
-
-RUN chown spring:spring app.jar
-
+COPY --from=builder --chown=spring:spring /workspace/services/auth-service/target/auth-service-0.0.1-SNAPSHOT.jar app.jar
 USER spring
-
 EXPOSE 8085
-
-HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
-CMD wget --no-verbose --tries=1 --spider http://localhost:8085/actuator/health || exit 1
-
-ENTRYPOINT ["java","-jar","app.jar"]
-
-LABEL maintainer="Nguyen Hien"
-
-LABEL project="AmazonLike"
-
-LABEL service="auth-service"
+# Auth/User protect health; provide an authorization header at runtime when required.
+HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
+    CMD curl --fail --silent --show-error --header "Authorization: ${HEALTHCHECK_AUTHORIZATION:-}" \
+        "http://localhost:${SERVER_PORT:-8085}/actuator/health" || exit 1
+ENTRYPOINT ["java", "-jar", "/app/app.jar"]
+LABEL project="AmazonLike" service="auth-service"
